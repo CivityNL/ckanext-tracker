@@ -1,20 +1,50 @@
 import json
 
 from redis import Redis
-from distutils.command.config import config
-
+from domain import Configuration
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from rq import Queue
+from rq.job import Job
+import re
+
+import logging
+log = logging.getLogger(__name__)
+
+
+def set_connection():
+    """
+    This function will get the Redis connection information from the configuration and initialize a
+    Redis connection based on the host and port
+    :return: Redis connection
+    """
+    redis_url = toolkit.config.get('ckan.redis.url')
+    m = re.match(r'.+(?<=:\/\/)(.+)(?=:):(.+)(?=\/)', redis_url)
+    redis_host = m.group(1)
+    redis_port = int(m.group(2))
+    return Redis(redis_host, redis_port)
+
+
+class TrackerPluginException(Exception):
+    pass
 
 
 class TrackerPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IConfigurable)
 
-    queue_name = 'undefined'
-
+    queue_name = None
+    configuration = None
     worker = None
+    redis_connection = None
 
-    redis_connection = Redis('redis', 6379)
+    # IConfigurable
+
+    def configure(self, config):
+        if self.queue_name is None:
+            self.queue_name = self.name
+        self.redis_connection = set_connection()
+        self.configuration = Configuration.from_dict(self.get_configuration_dict())
 
     # IConfigurer
 
@@ -24,50 +54,103 @@ class TrackerPlugin(plugins.SingletonPlugin):
         toolkit.add_resource('fanstatic', 'tracker')
 
     def get_configuration_data(self, context):
-        cfg = {
+        configuration_data = json.dumps(self.get_configuration_dict())
+        log.info('configuration_data = {}'.format(configuration_data))
+        return configuration_data
+
+    def get_configuration_dict(self):
+        conf_dict = {
             "database_url": toolkit.config.get(
                 'ckan.datastore.write_url'
             ),
             "geoserver_url": toolkit.config.get(
-                'ckanext.packagetracker_ogr.geoserver.url',
+                'ckanext.{}.geoserver.url'.format(self.name),
                 "http://admin:geoserver@geoserver:8080/geoserver"
             ),
             "ogr2ogr_command": toolkit.config.get(
-                'ckanext.packagetracker_ogr.command.ogr2ogr', "ogr2ogr"
+                'ckanext.{}.command.ogr2ogr'.format(self.name),
+                "ogr2ogr"
             ),
             "remote_ckan_host": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.remote_ckan_host',
-                'http://192.168.99.100:5001'
+                'ckanext.{}.remote_ckan_host'.format(self.name)
             ),
             "remote_ckan_org": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.remote_ckan_org',
-                '6679c632-1b6d-47da-ae84-5c8a4d0ef806'
+                'ckanext.{}.remote_ckan_org'.format(self.name)
             ),
             "remote_user_api_key": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.remote_user_api_key',
-                '05a75583-1ed5-41ca-b630-6ff60922eb37'
+                'ckanext.{}.remote_user_api_key'.format(self.name)
             ),
             "source_ckan_host": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.source_ckan_host',
-                'http://192.168.99.100:5001'
+                'ckanext.{}.source_ckan_host'.format(self.name)
             ),
             "source_ckan_org": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.source_ckan_org',
-                '6679c632-1b6d-47da-ae84-5c8a4d0ef806'
+                'ckanext.{}.source_ckan_org'.format(self.name)
+            ),
+            "source_ckan_user": toolkit.config.get(
+                'ckanext.{}.source_ckan_user'.format(self.name)
             ),
             "source_user_api_key": toolkit.config.get(
-                'ckanext.packagetracker_ckantockan.source_user_api_key',
-                '05a75583-1ed5-41ca-b630-6ff60922eb37'
+                'ckanext.{}.source_user_api_key'.format(self.name)
             ),
             "storage_path": toolkit.config.get(
                 'ckan.storage_path'
-            )
+            ),
+            "source_job_status_field": '{}_status'.format(self.name),
+            "source_job_id_field": '{}_job_id'.format(self.name),
+            "redis_job_timeout": toolkit.config.get(
+                'ckanext.{}.redis_job_timeout'.format(self.name), 180),
+            "redis_job_result_ttl": toolkit.config.get(
+                'ckanext.{}.redis_job_result_ttl'.format(self.name), 500),
+            "redis_job_ttl": toolkit.config.get(
+                'ckanext.{}.redis_job_ttl'.format(self.name), None)
         }
-        configuration_data = json.dumps(cfg)
-        return configuration_data
+        return conf_dict
+
+    def put_on_a_queue(self, context, data, command):
+        try:
+            job_data = self.get_data(context, data)
+            job = self.create_job(context, job_data, command)
+            self.before_enqueue(context, data, job)
+            q = Queue(self.get_queue_name(), connection=self.get_connection())
+            q.enqueue_job(job)
+            self.after_enqueue(context, data, job)
+        except TrackerPluginException as error:
+            self.handle_error(context, data, command, error)
+
+    def create_job(self, context, data, command):
+        cfg = self.get_configuration()
+        return Job.create(
+            command,
+            args=(cfg, data),
+            connection=self.get_connection(),
+            timeout=cfg.redis_job_timeout,
+            result_ttl=cfg.redis_job_result_ttl,
+            ttl=cfg.redis_job_ttl,
+            description='Job created by {}'.format(self.name)
+        )
+
+    def get_data(self, context, data):
+        return data
+
+    def before_enqueue(self, context, data, job):
+        pass
+
+    def after_enqueue(self, context, data, job):
+        pass
+
+    def handle_error(self, context, data, command, error):
+        pass
+
+    # getters
 
     def get_queue_name(self):
         return self.queue_name
 
     def get_worker(self):
         return self.worker
+
+    def get_connection(self):
+        return self.redis_connection
+
+    def get_configuration(self):
+        return self.configuration
