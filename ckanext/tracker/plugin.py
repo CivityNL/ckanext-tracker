@@ -18,7 +18,7 @@ def set_connection():
     Redis connection based on the host and port
     :return: Redis connection
     """
-    redis_url = toolkit.config.get('ckan.redis.url')
+    redis_url = toolkit.config.get('ckan.redis.url', 'redis://localhost:6379/0')
     m = re.match(r'.+(?<=:\/\/)(.+)(?=:):(.+)(?=\/)', redis_url)
     redis_host = m.group(1)
     redis_port = int(m.group(2))
