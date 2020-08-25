@@ -65,7 +65,43 @@ class TrackerPlugin(plugins.SingletonPlugin):
             ),
             "geoserver_url": toolkit.config.get(
                 'ckanext.{}.geoserver.url'.format(self.name),
-                "http://admin:geoserver@geoserver:8080/geoserver"
+                None
+            ),
+            "geonetwork_url": toolkit.config.get(
+                'ckanext.{}.geonetwork.url'.format(self.name),
+                None
+            ),
+			"address_phone": toolkit.config.get(
+                'ckanext.{}.address.phone'.format(self.name),
+                "+31 30 697 32 86"
+            ),
+			"address_city": toolkit.config.get(
+                'ckanext.{}.address.city'.format(self.name),
+                "Zeist"
+            ),
+            "address_country": toolkit.config.get(
+                'ckanext.{}.address.country'.format(self.name),
+                "the Netherlands"
+            ),
+            "address_type": toolkit.config.get(
+                'ckanext.{}.address.type'.format(self.name),
+                "electronic"
+            ),
+            "contact_email": toolkit.config.get(
+                'ckanext.{}.contact.email'.format(self.name),
+                "support@civity.nl"
+            ),
+            "contact_organization": toolkit.config.get(
+                'ckanext.{}.contact.organization'.format(self.name),
+                "Civity"
+            ),
+            "contact_person": toolkit.config.get(
+                'ckanext.{}.contact.person'.format(self.name),
+                "Mathieu Ronkes Agerbeek"
+            ),
+            "contact_position": toolkit.config.get(
+                'ckanext.{}.contact.position'.format(self.name),
+                "Support engineer"
             ),
             "ogr2ogr_command": toolkit.config.get(
                 'ckanext.{}.command.ogr2ogr'.format(self.name),
@@ -102,7 +138,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "redis_job_result_ttl": toolkit.config.get(
                 'ckanext.{}.redis_job_result_ttl'.format(self.name), 500),
             "redis_job_ttl": toolkit.config.get(
-                'ckanext.{}.redis_job_ttl'.format(self.name), None)
+                'ckanext.{}.redis_job_ttl'.format(self.name), None),
+            "redis_url": toolkit.config.get(
+                'ckan.redis.url', "redis://localhost:6379/")
         }
         return conf_dict
 
