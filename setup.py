@@ -80,8 +80,20 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points='''
         [ckan.plugins]
-        tracker=ckanext.tracker.plugin:TrackerPlugin
 
+        datastoretracker=ckanext.datastoretracker.plugin:DatastoretrackerPlugin
+        datastoretracker_geoserver=ckanext.datastoretracker_geoserver.plugin:Datastoretracker_GeoserverPlugin
+        datastoretracker_xlstocsv=ckanext.datastoretracker_xlstocsv.plugin:Datastoretracker_XlsToCsvPlugin
+        packagetracker=ckanext.packagetracker.plugin:PackagetrackerPlugin
+        packagetracker_ckantockan=ckanext.packagetracker_ckantockan.plugin:Packagetracker_CkantockanPlugin
+        packagetracker_ckantockan_donl=ckanext.packagetracker_ckantockan_donl.plugin:Packagetracker_Ckantockan_DonlPlugin
+        packagetracker_ogr=ckanext.packagetracker_ogr.plugin:Packagetracker_OgrPlugin
+        resourcetracker=ckanext.resourcetracker.plugin:ResourcetrackerPlugin
+        resourcetracker_ckantockan=ckanext.resourcetracker_ckantockan.plugin:Resourcetracker_CkantockanPlugin
+        resourcetracker_ckantockan_donl=ckanext.resourcetracker_ckantockan_donl.plugin:Resourcetracker_Ckantockan_DonlPlugins
+        resourcetracker_ogr=ckanext.resourcetracker_ogr.plugin:Resourcetracker_OgrPlugin
+        tracker=ckanext.tracker.plugin:TrackerPlugin
+        
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
     ''',

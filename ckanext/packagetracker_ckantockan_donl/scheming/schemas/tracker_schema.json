@@ -1,0 +1,20 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "dataset",
+  "about": "PRD Metadata Civity",
+  "about_url": "The Schema for the New PRD Civity 10/08/2018",
+  "dataset_fields": [
+    {
+      "field_name": "packagetracker_ckantockan_donl_status",
+      "label": "ckantockan_donl status",
+      "display_snippet": null,
+      "form_snippet": "hidden.html"
+    },
+    {
+      "field_name": "packagetracker_ckantockan_donl_job_id",
+      "label": "ckantockan_donl Job id",
+      "display_snippet": null,
+      "form_snippet": "hidden.html"
+    }
+  ]
+}

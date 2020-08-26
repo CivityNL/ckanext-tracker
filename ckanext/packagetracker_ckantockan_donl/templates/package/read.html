@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{% block page_heading %}
+    {{ super() }}
+    {% if 'packagetracker_ckantockan_donl_status' in pkg %}
+        </br>
+        {{ h.get_packagetracker_ckantockan_donl_badge(pkg) | safe }}
+    {% endif %}
+{% endblock %}

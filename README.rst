@@ -72,6 +72,29 @@ To install ckanext-tracker:
      sudo service apache2 reload
 
 
+----------------------------
+Additional Plugin Interfaces
+----------------------------
+
+**Catalog Clients**
+
+Inside ckanext-tracker are included sub-plugins that extend functionality. These sub-plugins use the correct hooks to populate redis queries and trigger the correct workers. The ones including an underscore '_' inherit properties from their parent, as named before the underscore.
+The current list of sub-plugins includes::
+
+      datastoretracker
+      datastoretracker_geoserver
+      datastoretracker_xlstocsv
+      packagetracker
+      packagetracker_ckantockan
+      packagetracker_ckantockan_donl
+      packagetracker_ogr
+      resourcetracker
+      resourcetracker_ckantockan
+      resourcetracker_ckantockan_donl
+      resourcetracker_ogr
+
+
+
 ---------------
 Config Settings
 ---------------
