@@ -1,4 +1,5 @@
 import logging
+import json
 
 from rq import Queue
 
@@ -43,11 +44,7 @@ class DatastoretrackerPlugin(tracker.TrackerPlugin):
 
     def after_upload(self, context, resource_dict, dataset_dict):
         log.info('after_upload from {}, action: {}'.format(__name__, 'none'))
-        get_worker_create = self.get_worker().create_datasource
-        if self.queue_name == 'geoserver':
-            get_worker_create = self.get_worker().create_resource
-        self.put_on_a_queue(context, resource_dict, dataset_dict,
-                            get_worker_create)
+        self.put_on_a_queue(context, resource_dict, dataset_dict, self.get_worker().create_datasource)
 
     # Interface method not implemented
     # def can_upload(self, resource_id):
@@ -55,5 +52,7 @@ class DatastoretrackerPlugin(tracker.TrackerPlugin):
 
     def put_on_a_queue(self, context, resource_dict, dataset_dict, command):
         q = Queue(self.get_queue_name(), connection=self.redis_connection)
-        conf_data = self.get_configuration_data(context)
-        q.enqueue(command, conf_data, resource_dict, dataset_dict)
+        configuration_data = self.get_configuration_data(context)
+        package_data = json.dumps(toolkit.get_action('package_show')(context, {'id': resource_dict['package_id']}))
+        resource_data = json.dumps(toolkit.get_action('resource_show')(context, {'id': resource_dict['id']}))
+        q.enqueue(command, configuration_data, package_data, resource_data)
