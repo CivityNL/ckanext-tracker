@@ -52,7 +52,6 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
         q.enqueue(command, configuration_data, package_data, resource_data)
 
     def get_data(self, context, resource):
-        log.info(resource)
         # Configuration data
         configuration_data = self.get_configuration_data(context)
         # Resource data
