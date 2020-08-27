@@ -91,6 +91,7 @@ setup(
         resourcetracker=ckanext.resourcetracker.plugin:ResourcetrackerPlugin
         resourcetracker_ckantockan=ckanext.resourcetracker_ckantockan.plugin:Resourcetracker_CkantockanPlugin
         resourcetracker_ckantockan_donl=ckanext.resourcetracker_ckantockan_donl.plugin:Resourcetracker_Ckantockan_DonlPlugins
+        resourcetracker_geoserver=ckanext.resourcetracker_geoserver.plugin:Resourcetracker_GeoserverPlugin
         resourcetracker_ogr=ckanext.resourcetracker_ogr.plugin:Resourcetracker_OgrPlugin
         tracker=ckanext.tracker.plugin:TrackerPlugin
         
