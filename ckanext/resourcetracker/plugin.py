@@ -52,10 +52,11 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
         q.enqueue(command, configuration_data, package_data, resource_data)
 
     def get_data(self, context, resource):
+        log.info(resource)
         # Configuration data
         configuration_data = self.get_configuration_data(context)
-        # Include package data (GeoNetwork worker needs package information at resource level)
-        package_data = json.dumps(toolkit.get_action('package_show')(context, {'id': resource['package_id']}))
         # Resource data
-        resource_data = json.dumps(toolkit.get_action('resource_show')(context, {'id': resource['id']}))
-        return configuration_data, package_data, resource_data
+        resource_data = toolkit.get_action('resource_show')(context, {'id': resource['id']})
+        # Include package data (GeoNetwork worker needs package information at resource level)
+        package_data = toolkit.get_action('package_show')(context, {'id': resource_data['package_id']})
+        return configuration_data, json.dumps(package_data), json.dumps(resource_data)

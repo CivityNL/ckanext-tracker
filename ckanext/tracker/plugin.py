@@ -55,7 +55,6 @@ class TrackerPlugin(plugins.SingletonPlugin):
 
     def get_configuration_data(self, context):
         configuration_data = json.dumps(self.get_configuration_dict())
-        log.info('configuration_data = {}'.format(configuration_data))
         return configuration_data
 
     def get_configuration_dict(self):
