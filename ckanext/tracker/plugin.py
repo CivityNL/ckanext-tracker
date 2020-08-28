@@ -70,9 +70,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.geonetwork.url'.format(self.name),
                 None
             ),
-			"address_phone": toolkit.config.get(
-                'ckanext.{}.address.phone'.format(self.name),
-                "+31 30 697 32 86"
+			"address": toolkit.config.get(
+                'ckanext.{}.address'.format(self.name),
+                "Handelsweg 6"
             ),
 			"address_city": toolkit.config.get(
                 'ckanext.{}.address.city'.format(self.name),
@@ -82,9 +82,21 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.address.country'.format(self.name),
                 "the Netherlands"
             ),
+			"address_phone": toolkit.config.get(
+                'ckanext.{}.address.phone'.format(self.name),
+                "+31 30 697 32 86"
+            ),
+			"address_state": toolkit.config.get(
+                'ckanext.{}.address.state'.format(self.name),
+                "Utrecht"
+            ),
             "address_type": toolkit.config.get(
                 'ckanext.{}.address.type'.format(self.name),
                 "electronic"
+            ),
+			"address_zip_code": toolkit.config.get(
+                'ckanext.{}.address.zip_code'.format(self.name),
+                "3707 NH"
             ),
             "contact_email": toolkit.config.get(
                 'ckanext.{}.contact.email'.format(self.name),
@@ -101,6 +113,10 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "contact_position": toolkit.config.get(
                 'ckanext.{}.contact.position'.format(self.name),
                 "Support engineer"
+            ),
+            "contact_url": toolkit.config.get(
+                'ckanext.{}.contact.url'.format(self.name),
+                "https://civity.nl"
             ),
             "ogr2ogr_command": toolkit.config.get(
                 'ckanext.{}.command.ogr2ogr'.format(self.name),
