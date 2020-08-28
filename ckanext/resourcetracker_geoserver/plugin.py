@@ -1,6 +1,7 @@
 import logging
 
 import ckanext.resourcetracker.plugin as resourcetracker
+import ckan.plugins.toolkit as toolkit
 from worker.geoserver import GeoServerWorkerWrapper
 
 logging.basicConfig()
@@ -24,5 +25,14 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         :param resource_dict:
         :return:
         """
-        log.info('before_show from {}, action: {}'.format(__name__, 'none'))
-        resource_dict["Bas"] = 'Vanmeulebrouk'
+        geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), 'undefined')
+        if geoserver_url != 'undefined':
+            log.info('''Connected to GeoServer {0}. Include in dict!'''.format(geoserver_url))
+            pretty_geoserver_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name));
+            if pretty_geoserver_url is not None:
+                pretty_geoserver_url += '/ows?'  # will change later
+                resource_dict["ows_url"] = pretty_geoserver_url
+                resource_dict["wms_layer_name"] = resource_dict['id']
+                resource_dict["wfs_featuretype_name"] = '@@todo-lookup-namespace' + ':' + resource_dict['id']
+        else:
+            log.info('Not connected to GeoServer {0}. Do not include in dict.')
