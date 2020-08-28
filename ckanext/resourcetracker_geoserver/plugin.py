@@ -26,7 +26,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         :return:
         """
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), 'undefined')
-        if geoserver_url.find('undefined') != -1:
+        if geoserver_url.find('undefined') != "-1":
             # log.info('''Connected to GeoServer {0}. Include in dict!'''.format(geoserver_url))
             pretty_geoserver_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name));
             if pretty_geoserver_url is not None:
@@ -35,4 +35,4 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 resource_dict["wms_layer_name"] = resource_dict['id']
                 resource_dict["wfs_featuretype_name"] = '@@todo-lookup-namespace' + ':' + resource_dict['id']
         # else:
-        #     log.info('Not connected to GeoServer {0}. Do not include in dict.')
+        #     log.info('''Not connected to GeoServer ({0}). Do not include in dict.'''.format(geoserver_url.find('undefined')))

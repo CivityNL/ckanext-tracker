@@ -38,13 +38,13 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         :return:
         """
         geonetwork_url = toolkit.config.get('ckanext.{}.geonetwork.url'.format(self.name), 'undefined')
-        if geonetwork_url.find('undefined') != -1:
-            log.info('''Connected to GeoNetwork {0}. Include in dict!'''.format(geonetwork_url))
-            parameters = urlparse.urlparse(gn_url)
+        if geonetwork_url.find('undefined') != "-1":
+            # log.info('''Connected to GeoNetwork {0}. Include in dict!'''.format(geonetwork_url))
+            parameters = urlparse.urlparse(geonetwork_url)
             geonetwork_url = parameters.scheme + '://' + parameters.hostname
             if parameters.port is not None:
                 geonetwork_url += ':' + str(parameters.port)
             geonetwork_url += parameters.path + '/srv/dut/catalog.search#/metadata/' + resource_dict['id']
             resource_dict["geonetwork_url"] = geonetwork_url
-        else:
-            log.info('Not connected to GeoServer {0}. Do not include in dict.')
+        # else:
+        #     log.info('''Not connected to GeoNetwork ({0}). Do not include in dict.'''.format(geonetwork_url.find('undefined')))
