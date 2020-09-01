@@ -13,6 +13,11 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
     queue_name = 'geoserver'
     worker = GeoNetworkWorkerWrapper()
 
+    # IConfigurer
+
+    def update_config(self, config_):
+        toolkit.add_template_directory(config_, 'templates')
+
     def after_create(self, context, resource):
         # Do not put a task on the geonetwork queue in case of a create. This
         # should be handled by geoserver worker. 
