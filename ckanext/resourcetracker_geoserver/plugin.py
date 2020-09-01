@@ -3,14 +3,33 @@ import logging
 import ckanext.resourcetracker.plugin as resourcetracker
 import ckan.plugins.toolkit as toolkit
 from worker.geoserver import GeoServerWorkerWrapper
+import ckan.plugins as plugins
+from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
+
 class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
+    plugins.implements(plugins.ITemplateHelpers)
 
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()
+
+    # IConfigurer
+
+    def update_config(self, config_):
+        toolkit.add_template_directory(config_, 'templates')
+
+    # ITemplateHelpers
+
+    def get_helpers(self):
+        return {
+            'get_resourcetracker_geoserver_wfs': get_resourcetracker_geoserver_wfs,
+            'get_resourcetracker_geoserver_wms': get_resourcetracker_geoserver_wms
+        }
+
+    # IResourceController
 
     def after_create(self, context, resource):
         log.info('after_create from {}, action: {}'.format(__name__, 'none'))
@@ -33,6 +52,6 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 pretty_geoserver_url += '/ows?'  # will change later
                 resource_dict["ows_url"] = pretty_geoserver_url
                 resource_dict["wms_layer_name"] = resource_dict['id']
-                resource_dict["wfs_featuretype_name"] = '@@todo-lookup-namespace' + ':' + resource_dict['id']
+                resource_dict["wfs_featuretype_name"] = self.configuration.workspace_name + ':' + resource_dict['id']
         # else:
         #     log.info('''Not connected to GeoServer ({0}). Do not include in dict.'''.format(geoserver_url.find('undefined')))
