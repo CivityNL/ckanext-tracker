@@ -51,7 +51,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
             if pretty_geoserver_url is not None:
                 pretty_geoserver_url += '/ows?'  # will change later
                 resource_dict["ows_url"] = pretty_geoserver_url
-                resource_dict["wms_layer_name"] = resource_dict['id']
+                resource_dict["wms_layer_name"] = self.configuration.workspace_name + ':' + resource_dict['id']
                 resource_dict["wfs_featuretype_name"] = self.configuration.workspace_name + ':' + resource_dict['id']
         # else:
         #     log.info('''Not connected to GeoServer ({0}). Do not include in dict.'''.format(geoserver_url.find('undefined')))

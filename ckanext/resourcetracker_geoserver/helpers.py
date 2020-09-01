@@ -24,12 +24,12 @@ def get_resourcetracker_geoserver_wms(res):
         'service': 'WMS',
         'version': '1.1.0',
         'request': 'GetMap',
-        'layers': res.get("wfs_featuretype_name"),
+        'layers': res.get("wms_layer_name"),
         'bbox': '-180.0,-90.0,180.0,90.0',
         'width': 768,
         'height': 384,
         'srs': 'EPSG:4326',
-        'format': 'application/openlayers'
+        'format': 'image/png'
     }
     params = urllib.urlencode(params_dict)
     if geoserver_url is not None:
