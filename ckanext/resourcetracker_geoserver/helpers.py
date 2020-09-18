@@ -3,7 +3,7 @@ import urllib
 
 def get_resourcetracker_geoserver_wfs(res):
     result = ''
-    geoserver_url = res.get("ows_url")
+    url = res.get("ows_url")
     params_dict = {
         'service': 'WFS',
         'version': '1.0.0',
@@ -12,14 +12,14 @@ def get_resourcetracker_geoserver_wfs(res):
         'maxFeatures': 50
     }
     params = urllib.urlencode(params_dict)
-    if geoserver_url is not None:
-        result = geoserver_url + params
+    if url is not None:
+        result = url + params
     return result
 
 
 def get_resourcetracker_geoserver_wms(res):
     result = ''
-    geoserver_url = res.get("ows_url")
+    url = res.get("ows_url")
     params_dict = {
         'service': 'WMS',
         'version': '1.1.0',
@@ -32,6 +32,6 @@ def get_resourcetracker_geoserver_wms(res):
         'format': 'image/png'
     }
     params = urllib.urlencode(params_dict)
-    if geoserver_url is not None:
-        result = geoserver_url + params
+    if url is not None:
+        result = url + params
     return result
