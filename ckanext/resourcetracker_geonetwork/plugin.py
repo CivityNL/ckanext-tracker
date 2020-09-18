@@ -45,8 +45,8 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         :return:
         """
         geonetwork_url = toolkit.config.get('ckanext.{}.geonetwork.url'.format(self.name), 'undefined')
-        if geonetwork_url.find('undefined') != "-1":
-            log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Include in dict!'''.format(
+        if geonetwork_url.find('undefined') < 0:
+            log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Include in dict.'''.format(
                 geonetwork_url, resource_dict['datastore_active'], geonetwork_url.find('undefined')
             ))
 
@@ -68,7 +68,7 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                     log.info('''Record not found. Do not include in dict.''')
                     resource_dict["geonetwork_url"] = None
             else:
-                log.info('''Datastore active ({0}). Do not include in dict.'''.format(resource_dict['datastore_active']))
+                log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
                 resource_dict["geonetwork_url"] = None
         else:
             log.info('''Not connected to GeoNetwork ({0}). Do not include in dict.'''.format(geonetwork_url.find('undefined')))
