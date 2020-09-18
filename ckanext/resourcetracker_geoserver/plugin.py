@@ -61,7 +61,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 if workspace is not None:
                     data_store = api.read_data_store(workspace, configuration.data_store_name)
                     if data_store is not None:
-                        feature_type = api.read_feature_type(workspace, data_store, resource.feature_type_name)
+                        feature_type = api.read_feature_type(workspace, data_store, resource_dict['id'])
                         if feature_type is not None:
                             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
                             output_url += '/ows?'
