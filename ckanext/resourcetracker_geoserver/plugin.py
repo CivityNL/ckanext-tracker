@@ -48,7 +48,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         """
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), 'undefined')
         if geoserver_url.find('undefined') < 0:
-            log.info('''Connected to geoserver {0}, datastore active {1}, find {2}. Include in dict.'''.format(
+            log.info('''Connected to geoserver {0}, datastore active {1}, find {2}. Investigate further.'''.format(
                 geoserver_url, resource_dict['datastore_active'], geoserver_url.find('undefined')
             ))
 
@@ -65,37 +65,25 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                         if feature_type is not None:
                             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
                             output_url += '/ows?'
-                            resource_dict["geoserver_url"] = output_url
-                            resource_dict["wms_layer_name"] = configuration.workspace_name + ':' + resource_dict['id']
-                            resource_dict["wfs_featuretype_name"] = configuration.workspace_name + ':' + resource_dict['id']
+                            self.set_dict_elements(resource_dict, output_url, configuration.workspace_name + ':' + resource_dict['id'], configuration.workspace_name + ':' + resource_dict['id'])
                         else:
                             log.info('''Feature type not found. Do not include in dict.''')
-                            resource_dict["geoserver_url"] = None
-                            resource_dict["wms_layer_name"] = None
-                            resource_dict["wfs_featuretype_name"] = None
+                            self.set_dict_elements(resource_dict, None, None, None)
                     else:
                         log.info('''Data store not found. Do not include in dict.''')
-                        resource_dict["geoserver_url"] = None
-                        resource_dict["wms_layer_name"] = None
-                        resource_dict["wfs_featuretype_name"] = None
+                        self.set_dict_elements(resource_dict, None, None, None)
                 else:
                     log.info('''Workspace not found. Do not include in dict.''')
-                    resource_dict["geoserver_url"] = None
-                    resource_dict["wms_layer_name"] = None
-                    resource_dict["wfs_featuretype_name"] = None
+                    self.set_dict_elements(resource_dict, None, None, None)
             else:
                 log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
-                resource_dict["geoserver_url"] = None
+                self.set_dict_elements(resource_dict, None, None, None)
         else:
             log.info('''Not connected to geoserver ({0}). Do not include in dict.'''.format(geoserver_url.find('undefined')))
-            resource_dict["geoserver_url"] = None
-        #if geoserver_url.find('undefined') != "-1":
-            # log.info('''Connected to GeoServer {0}. Include in dict!'''.format(geoserver_url))
-            # pretty_geoserver_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name));
-            # if pretty_geoserver_url is not None:
-            #     pretty_geoserver_url += '/ows?'  # will change later
-            #     resource_dict["ows_url"] = pretty_geoserver_url
-            #     resource_dict["wms_layer_name"] = self.configuration.workspace_name + ':' + resource_dict['id']
-            #     resource_dict["wfs_featuretype_name"] = self.configuration.workspace_name + ':' + resource_dict['id']
-        # else:
-        #     log.info('''Not connected to GeoServer ({0}). Do not include in dict.'''.format(geoserver_url.find('undefined')))
+            self.set_dict_elements(resource_dict, None, None, None)
+    
+    def set_dict_elements(self, resource_dict, ows_url, layer_name, feature_type_name):
+        resource_dict["ows_url"] = ows_url
+        resource_dict["wms_layer_name"] = layer_name
+        resource_dict["wfs_featuretype_name"] = feature_type_name
+
