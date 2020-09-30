@@ -1,6 +1,6 @@
 {
   "scheming_version": 1,
-  "organization_type": "publisher",
+  "organization_type": "organization",
   "about_url": "http://github.com/ckan/ckanext-scheming",
   "fields": [
     {
