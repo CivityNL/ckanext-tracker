@@ -57,5 +57,5 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
         # Resource data
         resource_data = toolkit.get_action('resource_show')(context, {'id': resource['id']})
         # Include package data (GeoNetwork worker needs package information at resource level)
-        package_data = toolkit.get_action('package_show')(context, {'id': resource_data['package_id']})
+        package_data = self.get_package_data(context, resource_data['package_id'])
         return configuration_data, json.dumps(package_data), json.dumps(resource_data)

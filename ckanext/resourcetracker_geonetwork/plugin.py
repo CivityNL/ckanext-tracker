@@ -2,10 +2,14 @@ import logging
 import urlparse
 
 import ckanext.resourcetracker.plugin as resourcetracker
+
 import ckan.plugins.toolkit as toolkit
+from ckan import model
+from ckan.model import Package
+
 from worker.geonetwork import GeoNetworkWorkerWrapper
-from domain import Configuration
 from worker.geonetwork.rest import GeoNetworkRestApi
+from domain import Organization
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -44,32 +48,47 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         :param resource_dict:
         :return:
         """
-        geonetwork_url = toolkit.config.get('ckanext.{}.geonetwork.url'.format(self.name), 'undefined')
-        if geonetwork_url.find('undefined') < 0:
-            log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Include in dict.'''.format(
-                geonetwork_url, resource_dict['datastore_active'], geonetwork_url.find('undefined')
-            ))
+        context = {
+            'model': model,
+            'ignore_auth': True,
+            'defer_commit': True, # See ckan/ckan#1714
+        }
 
-            if resource_dict['datastore_active']:
-                configuration = Configuration.from_dict(self.get_configuration_dict())
+        query = model.Session.query(Package.owner_org).\
+                                    filter(Package.id==resource_dict['package_id'])
 
-                api = GeoNetworkRestApi(configuration)
+        for owner_org in query:
+            log.info('Organization ID: %s', owner_org)
 
-                record = api.read_record(resource_dict['id'])
+            organization_dict = toolkit.get_action('organization_show')(context, {'id': owner_org})
 
-                if record is not None:
-                    parameters = urlparse.urlparse(geonetwork_url)
-                    output_url = parameters.scheme + '://' + parameters.hostname
-                    if parameters.port is not None:
-                        output_url += ':' + str(parameters.port)
-                    output_url += parameters.path + '/srv/dut/catalog.search#/metadata/' + resource_dict['id']
-                    resource_dict["geonetwork_url"] = output_url
+            organization = Organization.from_dict(organization_dict)
+            
+            log.info('GeoNetwork URL: ' + organization.geonetwork_url)
+
+            if organization.geonetwork_url is not None:
+                log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Include in dict.'''.format(
+                    organization.geonetwork_url, resource_dict['datastore_active'], organization.geonetwork_url.find('undefined')
+                ))
+
+                if resource_dict['datastore_active']:
+                    api = GeoNetworkRestApi(organization)
+
+                    record = api.read_record(resource_dict['id'])
+
+                    if record is not None:
+                        parameters = urlparse.urlparse(geonetwork_url)
+                        output_url = parameters.scheme + '://' + parameters.hostname
+                        if parameters.port is not None:
+                            output_url += ':' + str(parameters.port)
+                        output_url += parameters.path + '/srv/dut/catalog.search#/metadata/' + resource_dict['id']
+                        resource_dict["geonetwork_url"] = output_url
+                    else:
+                        log.info('''Record not found. Do not include in dict.''')
+                        resource_dict["geonetwork_url"] = None
                 else:
-                    log.info('''Record not found. Do not include in dict.''')
+                    log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
                     resource_dict["geonetwork_url"] = None
             else:
-                log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
+                log.info('''Not connected to GeoNetwork ({0}). Do not include in dict.'''.format(geonetwork_url.find('undefined')))
                 resource_dict["geonetwork_url"] = None
-        else:
-            log.info('''Not connected to GeoNetwork ({0}). Do not include in dict.'''.format(geonetwork_url.find('undefined')))
-            resource_dict["geonetwork_url"] = None

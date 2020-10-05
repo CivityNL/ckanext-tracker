@@ -53,6 +53,20 @@ class TrackerPlugin(plugins.SingletonPlugin):
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'tracker')
 
+    def get_package_data(self, context, package_id):
+        # Get package data. Contains organization without GeoNetwork URL and credentials (since these are added using a custom schema)
+        package_data = toolkit.get_action('package_show')(context, {'id': package_id})
+
+        # Get the organization with GeoNetwork URL and credentials
+        organization_data = toolkit.get_action('organization_show')(context, {'id': package_data['organization']['id']})
+
+        # Include the GeoNetwork URL and credentials in the organization in the package
+        package_data['organization']['geonetwork_url'] = organization_data['geonetwork_url']
+        package_data['organization']['geonetwork_password'] = organization_data['geonetwork_password']
+        package_data['organization']['geonetwork_username'] = organization_data['geonetwork_username']
+
+        return json.dumps(package_data)
+
     def get_configuration_data(self, context):
         configuration_data = json.dumps(self.get_configuration_dict())
         return configuration_data
@@ -65,11 +79,7 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "geoserver_url": toolkit.config.get(
                 'ckanext.{}.geoserver.url'.format(self.name),
                 None
-            ),
-            "geonetwork_url": toolkit.config.get(
-                'ckanext.{}.geonetwork.url'.format(self.name),
-                None
-            ),
+            ), 
 			"address": toolkit.config.get(
                 'ckanext.{}.address'.format(self.name),
                 "Handelsweg 6"

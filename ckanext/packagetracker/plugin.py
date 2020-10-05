@@ -57,7 +57,7 @@ class PackagetrackerPlugin(tracker.TrackerPlugin):
         return self.get_worker().upsert_package
 
     def get_data(self, context, data):
-        pkg_dict = toolkit.get_action('package_show')(context, {'id': data['id']})
+        pkg_dict = self.get_package_data(context, {'id': data['id']})
         if self.mapper is not None:
             package_data = self.mapper.map_package_to_harmonized(self.get_configuration(), pkg_dict)
         else:
