@@ -63,9 +63,9 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
             organization = Organization.from_dict(organization_dict)
             
             if organization.geonetwork_url is not None:
-                log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'''.format(
-                    organization.geonetwork_url, resource_dict['datastore_active'], organization.geonetwork_url.find('undefined')
-                ))
+                # log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'''.format(
+                #     organization.geonetwork_url, resource_dict['datastore_active'], organization.geonetwork_url.find('undefined')
+                # ))
 
                 if resource_dict['datastore_active']:
                     api = GeoNetworkRestApi(organization)
@@ -80,11 +80,11 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                         output_url += parameters.path + '/srv/dut/catalog.search#/metadata/' + resource_dict['id']
                         resource_dict["geonetwork_url"] = output_url
                     else:
-                        log.info('''Record not found. Do not include in dict.''')
+                        # log.info('''Record not found. Do not include in dict.''')
                         resource_dict["geonetwork_url"] = None
                 else:
-                    log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
+                    # log.info('''Datastore active {0}. Do not include in dict.'''.format(resource_dict['datastore_active']))
                     resource_dict["geonetwork_url"] = None
             else:
-                log.info('''Not connected to GeoNetwork ({0}). Do not include in dict.'''.format(geonetwork_url.find('undefined')))
+                # log.info('''Not connected to GeoNetwork. Do not include in dict.''')
                 resource_dict["geonetwork_url"] = None
