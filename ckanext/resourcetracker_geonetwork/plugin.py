@@ -58,16 +58,12 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                                     filter(Package.id==resource_dict['package_id'])
 
         for owner_org in query:
-            log.info('Organization ID: %s', owner_org)
-
             organization_dict = toolkit.get_action('organization_show')(context, {'id': owner_org})
 
             organization = Organization.from_dict(organization_dict)
             
-            log.info('GeoNetwork URL: ' + organization.geonetwork_url)
-
             if organization.geonetwork_url is not None:
-                log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Include in dict.'''.format(
+                log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'''.format(
                     organization.geonetwork_url, resource_dict['datastore_active'], organization.geonetwork_url.find('undefined')
                 ))
 
@@ -77,7 +73,7 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                     record = api.read_record(resource_dict['id'])
 
                     if record is not None:
-                        parameters = urlparse.urlparse(geonetwork_url)
+                        parameters = urlparse.urlparse(organization.geonetwork_url)
                         output_url = parameters.scheme + '://' + parameters.hostname
                         if parameters.port is not None:
                             output_url += ':' + str(parameters.port)
