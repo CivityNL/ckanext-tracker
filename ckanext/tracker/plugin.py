@@ -72,7 +72,7 @@ class TrackerPlugin(plugins.SingletonPlugin):
         return json.dumps(package_data)
 
     def get_resource_data(self, context, resource_id):
-        resource_data = toolkit.get_action('resource_show')(context, {'id': resource_dict['id']})
+        resource_data = toolkit.get_action('resource_show')(context, {'id': resource_id})
         return json.dumps(resource_data)
 
     def get_configuration_dict(self):
