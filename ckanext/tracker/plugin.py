@@ -53,6 +53,10 @@ class TrackerPlugin(plugins.SingletonPlugin):
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'tracker')
 
+    def get_configuration_data(self, context):
+        configuration_data = self.get_configuration_dict()
+        return json.dumps(configuration_data)
+
     def get_package_data(self, context, package_id):
         # Get package data. Contains organization without GeoNetwork URL and credentials (since these are added using a custom schema)
         package_data = toolkit.get_action('package_show')(context, {'id': package_id})
@@ -67,9 +71,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
 
         return json.dumps(package_data)
 
-    def get_configuration_data(self, context):
-        configuration_data = json.dumps(self.get_configuration_dict())
-        return configuration_data
+    def get_resource_data(self, context, resource_id):
+        resource_data = toolkit.get_action('resource_show')(context, {'id': resource_dict['id']})
+        return json.dumps(resource_data)
 
     def get_configuration_dict(self):
         conf_dict = {
