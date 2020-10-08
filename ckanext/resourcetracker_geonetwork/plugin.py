@@ -77,7 +77,7 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                         output_url = parameters.scheme + '://' + parameters.hostname
                         if parameters.port is not None:
                             output_url += ':' + str(parameters.port)
-                        output_url += parameters.path + '/srv/dut/catalog.search#/metadata/' + resource_dict['id']
+                        output_url += parameters.path + '/geonetwork/srv/dut/catalog.search#/metadata/' + resource_dict['id']
                         resource_dict["geonetwork_url"] = output_url
                     else:
                         # log.info('''Record not found. Do not include in dict.''')
