@@ -35,7 +35,6 @@
         "sv": "Länkar till Geoserver"
       },
       "default_value":"False",
-      "sorted_choices":true,
       "required": true
     }
   ]

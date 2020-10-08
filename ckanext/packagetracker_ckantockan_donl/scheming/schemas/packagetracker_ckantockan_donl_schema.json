@@ -35,7 +35,6 @@
         "sv": "Detta ignoreras om alternativet för geonetwork är aktiverat. NGR publicerar till DONL"
       },
       "default_value":"False",
-      "sorted_choices":true,
       "required": true
     },
     {

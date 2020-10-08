@@ -35,7 +35,6 @@
         "sv": "Fungerar bara om Geoserver Link också är aktiverat. NGR-informationen måste vara korrekt inställd i organisationens metadata."
       },
       "default_value":"False",
-      "sorted_choices":true,
       "required": true
     }
   ]
