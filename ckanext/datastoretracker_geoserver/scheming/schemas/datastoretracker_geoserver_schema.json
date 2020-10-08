@@ -1,0 +1,42 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "all",
+  "dataset_fields": [
+    {
+      "field_name": "geoserver_link_enabled",
+      "preset": "select",
+      "choices": [
+        {
+          "value": "True",
+          "label": {
+            "en": "True",
+            "nl": "Ja",
+            "sv": "Ja"
+          }
+        },
+        {
+          "value": "False",
+          "label": {
+            "en": "False",
+            "nl": "Nee",
+            "sv": "Nej"
+          }
+        }
+      ],
+      "label": {
+        "en": "Link to Geoserver",
+        "nl": "Link naar Geoserver",
+        "sv": "Länk till Geoserver"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "Links to Geoserver",
+        "nl": "Linkt naar Geoserver",
+        "sv": "Länkar till Geoserver"
+      },
+      "default_value":"False",
+      "sorted_choices":true,
+      "required": true
+    }
+  ]
+}

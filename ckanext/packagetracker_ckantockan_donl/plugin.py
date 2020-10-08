@@ -45,6 +45,11 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
         return self.do_upsert()
 
     def before_enqueue(self, context, data, job):
+
+        if not self.should_link_to_donl(data):
+            log.info('Skipping DONL Link because it SHOULD NOT do it')
+            raise SkipEnqueueException
+
         configuration = self.get_configuration()
         if is_sync_user(context, configuration):
             raise SkipEnqueueException
@@ -67,3 +72,17 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
         else:
             pass
 
+    def should_link_to_donl(self, pkg_dict):
+        return self.donl_link_is_enabled(pkg_dict) and not self.geonetwork_link_is_enabled(pkg_dict)
+
+    def donl_link_is_enabled(self, pkg_dict):
+        donl_link_field_name = 'donl_link_enabled'
+        return donl_link_field_name in pkg_dict and pkg_dict[donl_link_field_name] == 'True'
+
+    def geonetwork_link_is_enabled(self, pkg_dict):
+        geonetwork_link_field_name = 'geonetwork_link_enabled'
+        return geonetwork_link_field_name in pkg_dict and pkg_dict[geonetwork_link_field_name] == 'True' and self.geoserver_link_is_enabled(pkg_dict)
+
+    def geoserver_link_is_enabled(self, pkg_dict):
+        geoserver_link_field_name = 'geoserver_link_enabled'
+        return geoserver_link_field_name in pkg_dict and pkg_dict[geoserver_link_field_name] == 'True'

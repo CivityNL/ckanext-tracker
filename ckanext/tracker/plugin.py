@@ -1,5 +1,6 @@
 import json
 
+import ckan.model as model
 from redis import Redis
 from domain import Configuration
 import ckan.plugins as plugins
@@ -9,6 +10,7 @@ from rq.job import Job
 import re
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
@@ -23,6 +25,17 @@ def set_connection():
     redis_host = m.group(1)
     redis_port = int(m.group(2))
     return Redis(redis_host, redis_port)
+
+
+def get_user_apikey(user_id, target='source'):
+    """
+    This function will get the apikey for a specific user
+    :return: apikey
+    """
+    user = model.User.get(user_id)
+    if user:
+        return user.apikey
+    return None
 
 
 class TrackerPluginException(Exception):
@@ -83,12 +96,16 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "geoserver_url": toolkit.config.get(
                 'ckanext.{}.geoserver.url'.format(self.name),
                 None
-            ), 
-			"address": toolkit.config.get(
+            ),
+            "geonetwork_url": toolkit.config.get(
+                'ckanext.{}.geonetwork.url'.format(self.name),
+                None
+            ),
+            "address": toolkit.config.get(
                 'ckanext.{}.address'.format(self.name),
                 "Handelsweg 6"
             ),
-			"address_city": toolkit.config.get(
+            "address_city": toolkit.config.get(
                 'ckanext.{}.address.city'.format(self.name),
                 "Zeist"
             ),
@@ -96,11 +113,11 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.address.country'.format(self.name),
                 "the Netherlands"
             ),
-			"address_phone": toolkit.config.get(
+            "address_phone": toolkit.config.get(
                 'ckanext.{}.address.phone'.format(self.name),
                 "+31 30 697 32 86"
             ),
-			"address_state": toolkit.config.get(
+            "address_state": toolkit.config.get(
                 'ckanext.{}.address.state'.format(self.name),
                 "Utrecht"
             ),
@@ -108,7 +125,7 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.address.type'.format(self.name),
                 "electronic"
             ),
-			"address_zip_code": toolkit.config.get(
+            "address_zip_code": toolkit.config.get(
                 'ckanext.{}.address.zip_code'.format(self.name),
                 "3707 NH"
             ),
@@ -154,8 +171,8 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "source_ckan_user": toolkit.config.get(
                 'ckanext.{}.source_ckan_user'.format(self.name)
             ),
-            "source_user_api_key": toolkit.config.get(
-                'ckanext.{}.source_user_api_key'.format(self.name)
+            "source_user_api_key": get_user_apikey(toolkit.config.get(
+                'ckanext.{}.source_ckan_user'.format(self.name))
             ),
             "storage_path": toolkit.config.get(
                 'ckan.storage_path'

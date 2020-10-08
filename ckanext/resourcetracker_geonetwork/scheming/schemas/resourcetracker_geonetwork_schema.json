@@ -1,0 +1,42 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "all",
+  "dataset_fields": [
+    {
+      "field_name": "geonetwork_link_enabled",
+      "preset": "select",
+      "choices": [
+        {
+          "value": "True",
+          "label": {
+            "en": "True",
+            "nl": "Ja",
+            "sv": "Ja"
+          }
+        },
+        {
+          "value": "False",
+          "label": {
+            "en": "False",
+            "nl": "Nee",
+            "sv": "Nej"
+          }
+        }
+      ],
+      "label": {
+        "en": "Link to Geonetwork",
+        "nl": "Link naar Geonetwork",
+        "sv": "Länk till Geonetwork"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "Only works if Geoserver Link is also enabled. The NGR information must be correctly set in the organization metadata.",
+        "nl": "Werkt alleen als Geoserver Link ook is ingeschakeld. De NGR-informatie moet correct zijn ingesteld in de metadata van de organisatie.",
+        "sv": "Fungerar bara om Geoserver Link också är aktiverat. NGR-informationen måste vara korrekt inställd i organisationens metadata."
+      },
+      "default_value":"False",
+      "sorted_choices":true,
+      "required": true
+    }
+  ]
+}
