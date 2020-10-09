@@ -1,6 +1,6 @@
 from worker.ckan_to_ckan.donl import CkanToCkanDONLWorkerWrapper
 import ckanext.packagetracker_ckantockan.plugin as packagetracker_ckantockan
-from worker.ckan_to_ckan.mapper.dataplatform.mapper_dataplatform import MapperDataplatform
+from worker.ckan_to_ckan.mapper.dataplatform.mapper_dataplatform import MapperOneCkan
 from ckanext.tracker.plugin import TrackerPluginException
 import ckan.plugins.toolkit as toolkit
 from helpers import is_sync_user, is_private, get_packagetracker_ckantockan_donl_badge, send_feedback
@@ -27,7 +27,7 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
     plugins.implements(plugins.ITemplateHelpers)
 
     worker = CkanToCkanDONLWorkerWrapper()
-    mapper = MapperDataplatform()
+    mapper = MapperOneCkan()
 
     # IConfigurer
 
