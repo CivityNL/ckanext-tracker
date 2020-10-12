@@ -20,8 +20,9 @@ class Packagetracker_Ckantockan_OneCkanPlugin(packagetracker_ckantockan.Packaget
             raise SkipEnqueueException
 
     def handle_error(self, context, data, command, error):
-        if isinstance(error, SkipEnqueueException):
-            self.put_on_a_queue(context, data, self.do_delete())
+        # if isinstance(error, SkipEnqueueException):
+        #     self.put_on_a_queue(context, data, self.do_delete())
+        pass
 
     def should_enqueue(self, data):
         return 'access_rights' in data and data.get('access_rights') == "http://publications.europa.eu/resource/authority/access-right/PUBLIC"
