@@ -82,7 +82,7 @@ class TrackerPlugin(plugins.SingletonPlugin):
         package_data['organization']['geonetwork_password'] = organization_data['geonetwork_password']
         package_data['organization']['geonetwork_username'] = organization_data['geonetwork_username']
 
-        return json.dumps(package_data)
+        return package_data
 
     def get_resource_data(self, context, resource_id):
         resource_data = toolkit.get_action('resource_show')(context, {'id': resource_id})
