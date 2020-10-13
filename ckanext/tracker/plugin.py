@@ -32,9 +32,15 @@ def get_user_apikey(user_id, target='source'):
     This function will get the apikey for a specific user
     :return: apikey
     """
-    user = model.User.get(user_id)
-    if user:
-        return user.apikey
+    try:
+        if not user_id:
+            return None
+
+        user = model.User.get(user_id)
+        if user:
+            return user.apikey
+    except:
+        return None
     return None
 
 
