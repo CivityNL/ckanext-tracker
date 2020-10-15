@@ -84,9 +84,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
         organization_data = toolkit.get_action('organization_show')(context, {'id': package_data['organization']['id']})
 
         # Include the GeoNetwork URL and credentials in the organization in the package
-        package_data['organization']['geonetwork_url'] = organization_data['geonetwork_url']
-        package_data['organization']['geonetwork_password'] = organization_data['geonetwork_password']
-        package_data['organization']['geonetwork_username'] = organization_data['geonetwork_username']
+        package_data['organization']['geonetwork_url'] = organization_data.get('geonetwork_url', None)
+        package_data['organization']['geonetwork_password'] = organization_data.get('geonetwork_password', None)
+        package_data['organization']['geonetwork_username'] = organization_data.get('geonetwork_username', None)
 
         return package_data
 
