@@ -168,6 +168,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
             "remote_user_api_key": toolkit.config.get(
                 'ckanext.{}.remote_user_api_key'.format(self.name)
             ),
+            "remote_ckan_user": toolkit.config.get(
+                'ckanext.{}.remote_ckan_user'.format(self.name)
+            ),
             "source_ckan_host": toolkit.config.get(
                 'ckanext.{}.source_ckan_host'.format(self.name)
             ),
