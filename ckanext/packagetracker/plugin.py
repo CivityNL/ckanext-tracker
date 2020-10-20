@@ -4,6 +4,8 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import ckanext.tracker.plugin as tracker
 
+from domain import Package
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
@@ -57,9 +59,11 @@ class PackagetrackerPlugin(tracker.TrackerPlugin):
         return self.get_worker().upsert_package
 
     def get_data(self, context, data):
-        pkg_dict = self.get_package_data(context, data['id'])
+        package_data = self.get_package_data(context, data['id'])
+        package = Package.from_json(package_data)
         if self.mapper is not None:
-            package_data = self.mapper.map_package_to_harmonized(self.get_configuration(), pkg_dict)
+            # @@ToDo Workers are intended to work with configuration/package/resource objects, not dicts or JSON. 
+            package_data = self.mapper.map_package_to_harmonized(self.get_configuration(), Package.to_dict(package))
         else:
-            package_data = json.dumps(pkg_dict)
+            package_data = json.dumps(Package.to_dict(package))
         return package_data
