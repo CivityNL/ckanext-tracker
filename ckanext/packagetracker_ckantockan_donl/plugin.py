@@ -3,7 +3,7 @@ import ckanext.packagetracker_ckantockan.plugin as packagetracker_ckantockan
 from worker.ckan_to_ckan.mapper.oneckan.mapper_oneckan import MapperOneCkan
 from ckanext.tracker.plugin import TrackerPluginException
 import ckan.plugins.toolkit as toolkit
-from helpers import is_sync_user, is_private, get_packagetracker_ckantockan_donl_badge, send_feedback
+from helpers import is_action_done_by_worker, is_private, get_packagetracker_ckantockan_donl_badge, send_feedback
 import ckan.plugins as plugins
 
 import logging
@@ -46,19 +46,29 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
 
     def before_enqueue(self, context, data, job):
 
+        package_id = data.get("id", None)
+        if package_id is None:
+            log.debug("No package_id could be found, so nothing to do")
+            raise SkipEnqueueException
+
         if not self.should_link_to_donl(data):
-            log.info('Skipping DONL Link because it SHOULD NOT do it')
+            log.debug('Skipping DONL Link because it SHOULD NOT do it')
+            raise SkipEnqueueException
+
+        # the data passed does not contain the revision_id so we need to check that
+        pkg_dict = toolkit.get_action("package_show")(context, {'id': package_id})
+
+        if 'state' in pkg_dict and pkg_dict["state"] == 'draft':
+            log.debug('Drafts are weird. Let\'s wait until it finished before doing something')
             raise SkipEnqueueException
 
         configuration = self.get_configuration()
-        if is_sync_user(context, configuration):
+        if is_action_done_by_worker(context, pkg_dict, configuration):
+            log.debug("This action has been done by a worker or extension and will not be enqueued")
             raise SkipEnqueueException
 
         action = job.func_name
-        # log.debug('STATUS === {}'.format(data["state"]))
-        if 'state' in data and data["state"] == 'draft':
-            pass
-        elif is_private(data) and action not in ('delete_package', 'purge_package'):
+        if is_private(data) and action not in ('delete_package', 'purge_package'):
             raise IsPrivateException
         else:
             send_feedback(configuration, data, job)
