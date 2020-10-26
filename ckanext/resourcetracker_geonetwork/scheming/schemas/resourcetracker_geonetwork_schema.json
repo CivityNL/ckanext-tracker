@@ -7,19 +7,18 @@
       "preset": "select",
       "choices": [
         {
-          "value": "True",
-          "label": {
-            "en": "True",
-            "nl": "Ja",
-            "sv": "Ja"
-          }
-        },
-        {
           "value": "False",
           "label": {
             "en": "False",
             "nl": "Nee",
             "sv": "Nej"
+          }
+        },        {
+          "value": "True",
+          "label": {
+            "en": "True",
+            "nl": "Ja",
+            "sv": "Ja"
           }
         }
       ],

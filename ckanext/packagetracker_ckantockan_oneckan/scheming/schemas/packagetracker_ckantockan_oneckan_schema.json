@@ -3,7 +3,7 @@
   "dataset_type": "all",
   "dataset_fields": [
     {
-      "field_name": "geoserver_link_enabled",
+      "field_name": "dataplatform_link_enabled",
       "preset": "select",
       "choices": [
         {
@@ -24,15 +24,15 @@
         }
       ],
       "label": {
-        "en": "Link to Geoserver",
-        "nl": "Link naar Geoserver",
-        "sv": "Länk till Geoserver"
+        "en": "Link to Dataplatform",
+        "nl": "Link naar Dataplatform",
+        "sv": "Länk till Dataplatform"
       },
       "help_inline": true,
       "help_text": {
-        "en": "Links to Geoserver",
-        "nl": "Linkt naar Geoserver",
-        "sv": "Länkar till Geoserver"
+        "en": "This will decide if the data gets publish to Dataplatform as OpenData. Only works on Public Datasets",
+        "nl": "Dit zal beslissen of de gegevens worden gepubliceerd naar DataPlatform als Open Data. Werkt alleen op openbare datasets.",
+        "sv": "Detta kommer att avgöra om data publiceras på DataPlatform som Open Data. Fungerar bara på offentliga datamängder."
       },
       "default_value":"False",
       "required": true
