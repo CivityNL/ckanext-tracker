@@ -14,8 +14,8 @@ from domain import Organization
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
-class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
 
+class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
     queue_name = 'geoserver'
     worker = GeoNetworkWorkerWrapper()
 
@@ -27,18 +27,18 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
     def after_create(self, context, resource):
         # Do not put a task on the geonetwork queue in case of a create. This
         # should be handled by geoserver worker. 
-        pass 
+        pass
 
     def after_update(self, context, resource):
         # Do not put a task on the geonetwork queue in case of a update. This
         # should be handled by geoserver worker. 
-        pass 
+        pass
 
     def before_delete(self, context, resource, resources):
         # Do not put a task on the geonetwork queue in case of a delete. This
         # should be handled by geoserver worker. But it doesn't work in case
         # of NGR. 
-        pass 
+        pass
 
     def before_show(self, resource_dict):
         """
@@ -51,21 +51,21 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         context = {
             'model': model,
             'ignore_auth': True,
-            'defer_commit': True, # See ckan/ckan#1714
+            'defer_commit': True,  # See ckan/ckan#1714
         }
 
-        query = model.Session.query(Package.owner_org).\
-                                    filter(Package.id==resource_dict['package_id'])
+        query = model.Session.query(Package.owner_org).filter(Package.id == resource_dict['package_id'])
 
         for owner_org in query:
             organization_dict = toolkit.get_action('organization_show')(context, {'id': owner_org})
 
             organization = Organization.from_dict(organization_dict)
-            
-            if organization.geonetwork_url is not None:
-                # log.info('''Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'''.format(
-                #     organization.geonetwork_url, resource_dict['datastore_active'], organization.geonetwork_url.find('undefined')
-                # ))
+
+            if organization.geonetwork_url:
+                log.debug('Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
+                    organization.geonetwork_url, resource_dict['datastore_active'],
+                    organization.geonetwork_url.find('undefined')
+                ))
 
                 if resource_dict['datastore_active']:
                     api = GeoNetworkRestApi(organization)
@@ -77,7 +77,8 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                         output_url = parameters.scheme + '://' + parameters.hostname
                         if parameters.port is not None:
                             output_url += ':' + str(parameters.port)
-                        output_url += parameters.path + '/geonetwork/srv/dut/catalog.search#/metadata/' + resource_dict['id']
+                        output_url += parameters.path + '/geonetwork/srv/dut/catalog.search#/metadata/' + resource_dict[
+                            'id']
                         resource_dict["geonetwork_url"] = output_url
                     else:
                         # log.info('''Record not found. Do not include in dict.''')

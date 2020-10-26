@@ -18,10 +18,6 @@ class IsPrivateException(TrackerPluginException):
     pass
 
 
-class OnCreateException(TrackerPluginException):
-    pass
-
-
 class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetracker_CkantockanPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
