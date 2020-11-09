@@ -25,7 +25,7 @@
       ],
       "label": {
         "en": "Link to Geoserver",
-        "nl": "Link naar Geoserver",
+        "nl": "Publiceren Geoserver",
         "sv": "Länk till Geoserver"
       },
       "help_inline": true,
