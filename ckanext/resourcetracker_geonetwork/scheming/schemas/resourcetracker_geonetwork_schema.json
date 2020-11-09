@@ -24,7 +24,7 @@
       ],
       "label": {
         "en": "Link to Geonetwork",
-        "nl": "Link naar Geonetwork",
+        "nl": "Publiceren Geonetwork (NGR)",
         "sv": "Länk till Geonetwork"
       },
       "help_inline": true,
