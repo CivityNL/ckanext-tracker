@@ -1,6 +1,6 @@
 from worker.ckan_to_ckan.donl import CkanToCkanDONLWorkerWrapper
 import ckanext.packagetracker_ckantockan.plugin as packagetracker_ckantockan
-from worker.ckan_to_ckan.mapper.oneckan.mapper_oneckan import MapperOneCkan
+from mapper.oneckan.mapper_oneckan import MapperOneCkan
 from ckanext.tracker.plugin import TrackerPluginException
 import ckan.plugins.toolkit as toolkit
 from helpers import is_action_done_by_worker, is_private, get_packagetracker_ckantockan_donl_badge, send_feedback
