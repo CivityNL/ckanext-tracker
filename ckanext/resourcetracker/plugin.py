@@ -48,8 +48,8 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
 
     def put_on_a_queue(self, context, resource, command):
         q = Queue(self.get_queue_name(), connection=self.redis_connection)
-        configuration_data, package_data, resource_data = self.get_data(context, resource)
-        q.enqueue(command, configuration_data, package_data, resource_data)
+        configuration_data, package_data, resource_data, datadictionary_data = self.get_data(context, resource)
+        q.enqueue(command, configuration_data, package_data, resource_data, datadictionary_data)
 
     def get_data(self, context, resource):
         # Configuration data
@@ -63,5 +63,7 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
 
         # Resource data
         resource_data = self.get_resource_data(context, resource['id'])
+        # Data Dictionary data
+        datadictionary_data = self.get_datadictionary_data(context, resource['id'])
 
-        return configuration_data, package_data, resource_data
+        return configuration_data, package_data, resource_data, datadictionary_data
