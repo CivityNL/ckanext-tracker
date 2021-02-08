@@ -52,9 +52,19 @@ class DatastoretrackerPlugin(tracker.TrackerPlugin):
 
     def put_on_a_queue(self, context, resource_dict, dataset_dict, command):
         q = Queue(self.get_queue_name(), connection=self.redis_connection)
+        configuration_data, package_data, resource_data, datadictionary_data = self.get_data(context, resource_dict)
+        q.enqueue(command, configuration_data, package_data, resource_data, datadictionary_data)
 
+    def get_data(self, context, resource):
+        # Configuration data
         configuration_data = self.get_configuration_data(context)
-        package_data = self.get_package_data(context, resource_dict['package_id'])
-        resource_data = self.get_resource_data(context, resource_dict['id'])
-
-        q.enqueue(command, configuration_data, package_data, resource_data)
+        # Include package data (GeoNetwork worker needs package information at resource level)
+        if resource.get('package_id'):
+            package_data = self.get_package_data(context, resource['package_id'])
+        else:
+            package_data = None
+        # Resource data
+        resource_data = self.get_resource_data(context, resource['id'])
+        # Data Dictionary data
+        datadictionary_data = self.get_datadictionary_data(context, resource['id'])
+        return configuration_data, package_data, resource_data, datadictionary_data

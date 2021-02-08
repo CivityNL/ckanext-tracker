@@ -1,6 +1,7 @@
 import json
 
 import ckan.model as model
+import ckan.logic as logic
 from redis import Redis
 from domain import Configuration
 import ckan.plugins as plugins
@@ -72,27 +73,61 @@ class TrackerPlugin(plugins.SingletonPlugin):
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'tracker')
 
+    def return_data(self, data):
+        result = None
+        if data is not None:
+            result = json.dumps(data)
+        return result
+
+
     def get_configuration_data(self, context):
         configuration_data = self.get_configuration_dict()
-        return json.dumps(configuration_data)
+        return self.return_data(configuration_data)
+
+    def get_action_data(self, action, context, parameters):
+        """
+        This method is a wrapper around the toolkit.get_action which will check for any ActionErrors
+        and if so will return a None object instead
+        @param action:      action to perform
+        @param context:     context for the action
+        @param parameters:  specific parameters for the action
+        @return:            either the result of the toolkit.get_action or None in case of an ActionError
+        """
+        action_data = None
+        try:
+            action_data = toolkit.get_action(action)(context, parameters)
+        except logic.ActionError as actionError:
+            log.debug('get_action_data from {} returned {} for action: {}, context: {}, and parameters: {}'
+                      .format(__name__, type(actionError).__name__, action, context, parameters))
+        return action_data
 
     def get_package_data(self, context, package_id):
         # Get package data. Contains organization without GeoNetwork URL and credentials (since these are added using a custom schema)
-        package_data = toolkit.get_action('package_show')(context, {'id': package_id})
+        package_data = self.get_action_data('package_show', context, {'id': package_id})
 
         # Get the organization with GeoNetwork URL and credentials
-        organization_data = toolkit.get_action('organization_show')(context, {'id': package_data['organization']['id']})
+        if package_data is not None:
+            organization_data = self.get_action_data('organization_show', context, {'id': package_data['organization']['id']})
+            if organization_data is not None:
+                # Include the GeoNetwork URL and credentials in the organization in the package
+                package_data['organization']['geonetwork_url'] = organization_data.get('geonetwork_url', None)
+                package_data['organization']['geonetwork_password'] = organization_data.get('geonetwork_password', None)
+                package_data['organization']['geonetwork_username'] = organization_data.get('geonetwork_username', None)
+            else:
+                package_data['organization']['geonetwork_url'] = None
+                package_data['organization']['geonetwork_password'] = None
+                package_data['organization']['geonetwork_username'] = None
 
-        # Include the GeoNetwork URL and credentials in the organization in the package
-        package_data['organization']['geonetwork_url'] = organization_data.get('geonetwork_url', None)
-        package_data['organization']['geonetwork_password'] = organization_data.get('geonetwork_password', None)
-        package_data['organization']['geonetwork_username'] = organization_data.get('geonetwork_username', None)
-
-        return json.dumps(package_data)
+        return self.return_data(package_data)
 
     def get_resource_data(self, context, resource_id):
-        resource_data = toolkit.get_action('resource_show')(context, {'id': resource_id})
-        return json.dumps(resource_data)
+        resource_data = self.get_action_data('resource_show', context, {'id': resource_id})
+        return self.return_data(resource_data)
+
+    def get_datadictionary_data(self, context, resource_id):
+        # use the datastore_search api without records (limit 0) to get the dictionary settings
+        datadictionary_data = self.get_action_data('datastore_search', context, {'id': resource_id, 'limit': 0})
+        return self.return_data(datadictionary_data)
 
     def get_configuration_dict(self):
         conf_dict = {
