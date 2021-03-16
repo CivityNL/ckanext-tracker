@@ -28,21 +28,28 @@
     :target: https://pypi.python.org/pypi/ckanext-tracker/
     :alt: License
 
-=============
+===============
 ckanext-tracker
-=============
+===============
 
 .. Put a description of your extension here:
    What does it do? What features does it have?
    Consider including some screenshots or embedding a video!
 
 
-------------
-Requirements
-------------
+--------------------
+Latest Notes & TODOs
+--------------------
 
-For example, you might want to mention here which versions of CKAN this
-extension works with.
+- [ATTENTION 1]
+   resourcetracker_ogr is used to replace datastore functionalities previously served by datapusher or xloader. Making use of this sub-plugin will cause compatibility issues and malfunctioning of several ckan extensions that rely on either datapusher or xloader and their respective hooks and triggers.
+- [ATTENTION 2]
+   datastoretracker and its subplugins are using datapusher/xloader hooks and triggers and will soon be disabled and replaced by ogr trackers and thus it is not adviced to be further developed.
+
+- [TODO 1]
+   Making use of resourcetracker_ogr is already causing existing extensions that were served through datapusher/xloader and/or datastoretracker to not work properly. Two extensions that already need to be upgraded are ckanext-xlstocsv and ckanext-validation.
+- [TODO 2]
+   resourcetracker_ogr is currently blocking triggers coming from datastore actions. This could result in data loss and should be further investigated, for example in the cases of a datastore_update or datastore_upsert.
 
 
 ------------
