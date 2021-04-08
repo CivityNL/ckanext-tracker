@@ -48,9 +48,9 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         """
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), 'undefined')
         if geoserver_url.find('undefined') < 0:
-            log.info('''Connected to geoserver {0}, datastore active {1}, find {2}. Investigate further.'''.format(
-                geoserver_url, resource_dict['datastore_active'], geoserver_url.find('undefined')
-            ))
+            # log.info('''Connected to geoserver {0}, datastore active {1}, find {2}. Investigate further.'''.format(
+            #     geoserver_url, resource_dict['datastore_active'], geoserver_url.find('undefined')
+            # ))
 
             if resource_dict['datastore_active']:
                 configuration = Configuration.from_dict(self.get_configuration_dict())
