@@ -4,6 +4,7 @@
   "dataset_fields": [
     {
       "field_name": "geonetwork_link_enabled",
+      "harmonized_field_name": "geonetwork_link_enabled",
       "preset": "select",
       "choices": [
         {

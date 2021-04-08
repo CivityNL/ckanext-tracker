@@ -4,6 +4,7 @@
   "dataset_fields": [
     {
       "field_name": "donl_link_enabled",
+      "harmonized_field_name": "donl_link_enabled",
       "preset": "select",
       "choices": [
         {
@@ -39,12 +40,14 @@
     },
     {
       "field_name": "packagetracker_ckantockan_donl_status",
+      "harmonized_field_name": "packagetracker_ckantockan_donl_status",
       "label": "ckantockan_donl status",
       "display_snippet": null,
       "form_snippet": "hidden.html"
     },
     {
       "field_name": "packagetracker_ckantockan_donl_job_id",
+      "harmonized_field_name": "packagetracker_ckantockan_donl_job_id",
       "label": "ckantockan_donl Job id",
       "display_snippet": null,
       "form_snippet": "hidden.html"
