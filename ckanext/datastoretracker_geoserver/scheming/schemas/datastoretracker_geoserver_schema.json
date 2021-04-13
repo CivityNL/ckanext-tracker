@@ -38,24 +38,5 @@
       "default_value":"False",
       "required": true
     }
-  ],
-  "resource_fields": [
-  {
-      "field_name": "layer_extent",
-      "form_placeholder": "[ -180, -90, 180, 90]",
-      "display_snippet": "text.html",
-      "form_snippet": "text.html",
-      "help_inline": true,
-      "label": {
-        "en": "Extent",
-        "nl": "Omvang",
-        "sv": "Storlek"
-      },
-      "help_text": {
-        "en": "Bounding box of the resource",
-        "nl": "Omgrenzende rechthoek van de bron",
-        "sv": "Resursens avgränsningsruta"
-    }
-  }
-]
+  ]
 }
