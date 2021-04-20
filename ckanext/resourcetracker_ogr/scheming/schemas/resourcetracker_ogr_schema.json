@@ -40,6 +40,24 @@
     }
   ],
   "resource_fields": [
+    {
+      "field_name": "layer_srid",
+      "form_placeholder": "4326",
+      "display_snippet": "text.html",
+      "form_snippet": "text.html",
+      "validators": "ignore_missing int_validator",
+      "help_inline": true,
+      "label": {
+        "en": "Coordinate System",
+        "nl": "Coördinatensysteem",
+        "sv": "Koordinatsystem"
+      },
+      "help_text": {
+        "en": "Coordinate System of the resource. Must be an integer",
+        "nl": "Coördinatensysteem van de bron. Moet een geheel getal zijn",
+        "sv": "Koordinatsystem för resursen. Måste vara ett heltal."
+      }
+  },
   {
       "field_name": "layer_extent",
       "form_placeholder": "[ -180, -90, 180, 90]",

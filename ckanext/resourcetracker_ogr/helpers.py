@@ -1,7 +1,7 @@
 import urllib
 
 
-def get_resourcetracker_geoserver_wfs(res):
+def get_resourcetracker_ogr_wfs(res):
     result = ''
     url = res.get("ows_url")
     params_dict = {
@@ -17,7 +17,7 @@ def get_resourcetracker_geoserver_wfs(res):
     return result
 
 
-def get_resourcetracker_geoserver_wms(res):
+def get_resourcetracker_ogr_wms(res):
     result = ''
     url = res.get("ows_url")
     params_dict = {
