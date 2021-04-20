@@ -1,14 +1,16 @@
 from worker.ogr import OgrWorkerWrapper
 import ckanext.resourcetracker.plugin as resourcetracker
 import ckan.plugins.toolkit as toolkit
-from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms
+import helpers as h
 from domain import Configuration
+import ckan.plugins as plugins
 from worker.geoserver.rest import GeoServerRestApi
 import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
 class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
+    plugins.implements(plugins.ITemplateHelpers)
 
     queue_name = 'ogr'
     worker = OgrWorkerWrapper()
@@ -30,12 +32,13 @@ class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
         log.debug('OGR: after_update')
         if resource.get("url_type") != 'datastore':
             self.put_on_a_queue(context, resource, self.get_worker().update_resource)
-        if resource.get("url_type") == 'datastore' and self.resource_metadata_changed:
-            # Trigger geoserver update_feature_type only
-            from worker.geoserver import GeoServerWorkerWrapper
-            self.queue_name = 'geoserver'
-            self.worker = GeoServerWorkerWrapper()
-            self.put_on_a_queue(context, resource, self.get_worker().update_resource)
+        else:
+            if self.resource_metadata_changed:
+                # Trigger geoserver update_feature_type only
+                from worker.geoserver import GeoServerWorkerWrapper
+                self.queue_name = 'geoserver'
+                self.worker = GeoServerWorkerWrapper()
+                self.put_on_a_queue(context, resource, self.get_worker().update_resource)
         #TODO2 if resource.get("url_type") == 'datastore':
 
     def before_delete(self, context, resource, resources):
@@ -49,8 +52,8 @@ class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
     
     def get_helpers(self):
         return {
-            'get_resourcetracker_geoserver_wfs': get_resourcetracker_geoserver_wfs,
-            'get_resourcetracker_geoserver_wms': get_resourcetracker_geoserver_wms
+            'get_resourcetracker_ogr_wfs': h.get_resourcetracker_ogr_wfs,
+            'get_resourcetracker_ogr_wms': h.get_resourcetracker_ogr_wms
         }
     
     def before_show(self, resource_dict):
