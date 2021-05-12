@@ -102,8 +102,15 @@ class TrackerPlugin(plugins.SingletonPlugin):
         return action_data
 
     def get_package_data(self, context, package_id):
+
         # Get package data. Contains organization without GeoNetwork URL and credentials (since these are added using a custom schema)
         package_data = self.get_action_data('package_show', context, {'id': package_id})
+        # TODO get harmonized_package_show
+        # package_data = self.get_action_data('harmonized_package_show', context, {'id': package_id})
+
+        license_list = self.get_action_data('license_list', context, {})
+        # Get the first element from the licence list, that matches the license ID and return it's URL
+        package_data['license_url'] = next((license['url'] for license in license_list if license["id"] == package_data['license_id']), None)
 
         # Get the organization with GeoNetwork URL and credentials
         if package_data is not None:
