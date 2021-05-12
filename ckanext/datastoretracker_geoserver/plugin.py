@@ -14,4 +14,5 @@ class Datastoretracker_GeoserverPlugin(datastoretracker.DatastoretrackerPlugin):
     def after_upload(self, context, resource_dict, dataset_dict):
         if self.geoserver_link_field_name in dataset_dict and dataset_dict[self.geoserver_link_field_name] == 'True':
             log.info('Linking to Geoserver')
+            # TODO harmonize before sending to worker
             self.put_on_a_queue(context, resource_dict, dataset_dict, self.get_worker().create_datasource)
