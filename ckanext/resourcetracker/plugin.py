@@ -23,8 +23,6 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
 
     worker = None
 
-    redis_connection = Redis('redis', 6379)
-
     # IConfigurer
 
     def update_config(self, config_):
@@ -47,7 +45,7 @@ class ResourcetrackerPlugin(tracker.TrackerPlugin):
         self.put_on_a_queue(context, resource, self.get_worker().delete_resource)
 
     def put_on_a_queue(self, context, resource, command):
-        q = Queue(self.get_queue_name(), connection=self.redis_connection)
+        q = Queue(self.get_queue_name(), connection=self.get_connection())
         configuration_data, package_data, resource_data, datadictionary_data = self.get_data(context, resource)
         q.enqueue(command, configuration_data, package_data, resource_data, datadictionary_data)
 

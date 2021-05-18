@@ -3,9 +3,13 @@ import urlparse
 
 import ckanext.resourcetracker.plugin as resourcetracker
 
+import re
+import datetime
+
 import ckan.plugins.toolkit as toolkit
 from ckan import model
-from ckan.model import Package
+from ckan.model import Package, GroupExtra
+import ckan.plugins as plugins
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from worker.geonetwork import GeoNetworkWorkerWrapper
@@ -17,8 +21,25 @@ log = logging.getLogger(__name__)
 
 
 class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
+    plugins.implements(plugins.IConfigurable)
+
     queue_name = 'geoserver'
     worker = GeoNetworkWorkerWrapper()
+
+    local_cache_active = False
+    local_cache_refresh_rate = 300
+    local_cache = {}
+    local_cache_last_updated = {}
+
+    DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
+
+    REGEX_IDENTIFIER = re.compile('(?<=<dc:identifier>)(.+)(?=<\/dc:identifier>)')
+    REGEX_NEXT_RECORD = re.compile('(?<=nextRecord=")([0-9]+)(?=")')
+
+    # IConfigurable
+    def configure(self, config):
+        super(Resourcetracker_GeonetworkPlugin, self).configure(config)
+        self.local_cache_active = toolkit.config.get('ckanext.{}.geonetwork.local_cache_active'.format(self.name), True)
 
     # IConfigurer
 
@@ -49,45 +70,99 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         :param resource_dict:
         :return:
         """
-        context = {
-            'model': model,
-            'ignore_auth': True,
-            'defer_commit': True,  # See ckan/ckan#1714
-        }
         resource_dict["geonetwork_url"] = None
         if resource_dict['datastore_active'] is True:
             try:
                 owner_org_id = model.Session.query(Package.owner_org).filter(Package.id == resource_dict['package_id']).one()
-                organization_dict = toolkit.get_action('organization_show')(context, {'id': owner_org_id})
+                group_extra = model.Session.query(GroupExtra.key, GroupExtra.value).filter(GroupExtra.group_id == owner_org_id).all()
+                organization_dict = { 'id': owner_org_id }
+                for group_extra in group_extra:
+                    organization_dict[group_extra.key] = group_extra.value
                 organization = Organization.from_dict(organization_dict)
-                self.set_dict_elements(resource_dict, organization)
-            except NoResultFound, exception:
-                log.debug("Could not find any organization for package with id '{id}'"
-                          .format(id=resource_dict['package_id']))
-            except MultipleResultsFound, exception:
-                log.debug("Found multiple organizations for package with id '{id}'"
+                if organization.geonetwork_url:
+                    log.debug(
+                        'Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
+                            organization.geonetwork_url, resource_dict['datastore_active'],
+                            organization.geonetwork_url.find('undefined')
+                        ))
+                    if self.local_cache_active is True:
+                        self._before_show_using_local_cache(resource_dict, organization)
+                    else:
+                        self._before_show(resource_dict, organization)
+            except:
+                log.debug("Could not determine organization for package with id '{id}'"
                           .format(id=resource_dict['package_id']))
 
-    def set_dict_elements(self, resource_dict, organization):
-        if organization.geonetwork_url:
-            log.debug('Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
-                organization.geonetwork_url, resource_dict['datastore_active'],
-                organization.geonetwork_url.find('undefined')
-            ))
-            api = GeoNetworkRestApi(organization)
-            record = api.read_record(resource_dict['id'])
+    def set_dict_elements(self, resource_dict, geonetwork_url):
+        parameters = urlparse.urlparse(geonetwork_url)
+        output_url = parameters.scheme + '://' + parameters.hostname
+        if parameters.port is not None:
+            output_url += ':' + str(parameters.port)
+        output_url += parameters.path + '/geonetwork/srv/dut/catalog.search#/metadata/' + resource_dict[
+            'id']
+        resource_dict["geonetwork_url"] = output_url
 
-            if record is not None:
-                parameters = urlparse.urlparse(organization.geonetwork_url)
-                output_url = parameters.scheme + '://' + parameters.hostname
-                if parameters.port is not None:
-                    output_url += ':' + str(parameters.port)
-                output_url += parameters.path + '/geonetwork/srv/dut/catalog.search#/metadata/' + resource_dict[
-                    'id']
-                resource_dict["geonetwork_url"] = output_url
-            else:
-                # log.info('''Record not found. Do not include in dict.''')
-                resource_dict["geonetwork_url"] = None
-        else:
-            # log.info('''Not connected to GeoNetwork. Do not include in dict.''')
-            resource_dict["geonetwork_url"] = None
+    def _before_show(self, resource_dict, organization):
+        api = GeoNetworkRestApi(organization)
+        record = api.read_record(resource_dict['id'])
+        if record is not None:
+            set_dict_elements(resource_dict, organization.geonetwork_url)
+
+    def _before_show_using_local_cache(self, resource_dict, organization):
+        if self.should_update_local_cache(organization, resource_dict):
+            self.update_local_cache(organization)
+        if organization.organization_id in self.local_cache and self.local_cache[organization.organization_id] is not None and resource_dict['id'] in self.local_cache[organization.organization_id]:
+            set_dict_elements(resource_dict, organization.geonetwork_url)
+
+    def should_update_local_cache(self, organization, resource_dict=None):
+        result = False
+        if self.local_cache_active is False or not organization.geonetwork_url:
+            result = False
+        elif organization.organization_id not in self.local_cache_last_updated:
+            result = True
+        elif self.local_cache_refresh_rate is not None and (datetime.datetime.now() - self.local_cache_last_updated[organization.organization_id]).total_seconds() > self.local_cache_refresh_rate:
+            result = True
+        elif resource_dict is not None:
+            date_string = resource_dict.get('last_modified', None)
+            date = None
+            if date_string is None:
+                date_string = resource_dict.get('created', None)
+            if date_string is not None:
+                date = datetime.datetime.strptime(date_string, self.DATE_TIME_FORMAT)
+            if date is not None and self.local_cache_last_updated[organization.organization_id] < date:
+                result = True
+        return result
+
+    def update_local_cache(self, organization):
+        """
+        This method will fetch the names (which are equal to the resource id's) from all the feature_types belonging to
+        the workspace and data_store from the configuration and will update the local_cache_last_updated
+        @param configuration: Configuration object
+        @rtype: None
+        """
+        result = None
+        api = GeoNetworkRestApi(organization)
+        result, nextRecord = self.get_records_and_nextrecord(api)
+        while nextRecord > 0:
+            data, nextRecord = self.get_records_and_nextrecord(api)
+            result += data
+        self.local_cache[organization.organization_id] = result
+        self.local_cache_last_updated[organization.organization_id] = datetime.datetime.now()
+
+    def get_records_url(self, limit=100, offset=1):
+        return 'csw?request=GetRecords&service=CSW&version=2.0.2&typeNames=csw%3ARecord&elementsetname=summary&maxRecords={limit}&outputSchema=csw:Record&resultType=results&startPosition={offset}'.\
+            format(limit=limit, offset=offset)
+
+    def get_records_and_nextrecord(self, api, offset=1):
+        data = None
+        records = []
+        nextRecord = 0
+        try:
+            data = api.get('geonetwork/srv/eng', self.get_records_url(offset=offset))
+        except:
+            log.debug("something went wrong with the GetRecords from {}".format(api.url))
+        if data is not None:
+            records = REGEX_IDENTIFIER.findall(text)
+            nextRecordSearch = REGEX_NEXT_RECORD.search(data)
+            nextRecord = int(nextRecordSearch.group(0))
+        return records, nextRecord
