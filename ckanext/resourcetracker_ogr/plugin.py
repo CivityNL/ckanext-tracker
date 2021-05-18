@@ -31,8 +31,9 @@ class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
 
     # IConfigurable
     def configure(self, config):
+        super(Resourcetracker_OgrPlugin, self).configure(config)
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), None)
-        self.local_cache_active = toolkit.config.get('ckanext.{}.geoserver.local_cache_active'.format(self.name), False)
+        self.local_cache_active = toolkit.config.get('ckanext.{}.geoserver.local_cache_active'.format(self.name), True)
         configuration = Configuration.from_dict(self.get_configuration_dict())
         if geoserver_url is not None:
             self.api = GeoServerRestApi(configuration)
