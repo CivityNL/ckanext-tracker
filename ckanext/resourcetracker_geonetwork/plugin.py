@@ -80,18 +80,19 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                     organization_dict[group_extra.key] = group_extra.value
                 organization = Organization.from_dict(organization_dict)
                 if organization.geonetwork_url:
-                    log.debug(
-                        'Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
-                            organization.geonetwork_url, resource_dict['datastore_active'],
-                            organization.geonetwork_url.find('undefined')
-                        ))
+                    # log.debug(
+                    #     'Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
+                    #         organization.geonetwork_url, resource_dict['datastore_active'],
+                    #         organization.geonetwork_url.find('undefined')
+                    #     ))
                     if self.local_cache_active is True:
                         self._before_show_using_local_cache(resource_dict, organization)
                     else:
                         self._before_show(resource_dict, organization)
             except:
-                log.debug("Could not determine organization for package with id '{id}'"
-                          .format(id=resource_dict['package_id']))
+                pass
+                # log.debug("Could not determine organization for package with id '{id}'"
+                #           .format(id=resource_dict['package_id']))
 
     def set_dict_elements(self, resource_dict, geonetwork_url):
         parameters = urlparse.urlparse(geonetwork_url)
@@ -160,7 +161,8 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         try:
             data = api.get('geonetwork/srv/eng', self.get_records_url(offset=offset))
         except:
-            log.debug("something went wrong with the GetRecords from {}".format(api.url))
+            pass
+            # log.debug("something went wrong with the GetRecords from {}".format(api.url))
         if data is not None:
             records = REGEX_IDENTIFIER.findall(text)
             nextRecordSearch = REGEX_NEXT_RECORD.search(data)
