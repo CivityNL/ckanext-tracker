@@ -1,44 +1,6 @@
 {
   "scheming_version": 1,
   "dataset_type": "all",
-  "dataset_fields": [
-    {
-      "field_name": "geoserver_link_enabled",
-      "harmonized_field_name": "geoserver_link_enabled",
-      "preset": "select",
-      "choices": [
-        {
-          "value": "False",
-          "label": {
-            "en": "False",
-            "nl": "Nee",
-            "sv": "Nej"
-          }
-        },
-        {
-          "value": "True",
-          "label": {
-            "en": "True",
-            "nl": "Ja",
-            "sv": "Ja"
-          }
-        }
-      ],
-      "label": {
-        "en": "Link to Geoserver",
-        "nl": "Publiceren Geoserver",
-        "sv": "Länk till Geoserver"
-      },
-      "help_inline": true,
-      "help_text": {
-        "en": "Links to Geoserver",
-        "nl": "Linkt naar Geoserver",
-        "sv": "Länkar till Geoserver"
-      },
-      "default_value":"False",
-      "required": true
-    }
-  ],
   "resource_fields": [
     {
       "field_name": "layer_srid",
@@ -57,8 +19,8 @@
         "nl": "Coördinatensysteem van de bron. Moet een geheel getal zijn",
         "sv": "Koordinatsystem för resursen. Måste vara ett heltal."
       }
-  },
-  {
+    },
+    {
       "field_name": "layer_extent",
       "form_placeholder": "[ -180, -90, 180, 90]",
       "display_snippet": "text.html",
@@ -74,6 +36,6 @@
         "nl": "Omgrenzende rechthoek van de bron",
         "sv": "Resursens avgränsningsruta"
       }
-  }
-]
+    }
+  ]
 }

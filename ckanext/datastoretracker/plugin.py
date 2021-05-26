@@ -7,6 +7,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import ckanext.xloader.interfaces as xloader_interfaces
 import ckanext.datapusher.plugin as datapusher
+import ckanext.resourcetracker_ogr.interface as resourcetracker_ogr_interfaces
 
 import ckanext.tracker.plugin as tracker
 
@@ -22,9 +23,11 @@ class DatastoretrackerPlugin(tracker.TrackerPlugin):
         plugins.implements(datapusher.IDataPusher, inherit=True)
     elif plugins.plugin_loaded('xloader'):
         plugins.implements(xloader_interfaces.IXloader, inherit=True)
+    elif plugins.plugin_loaded('resourcetracker_ogr'):
+        plugins.implements(resourcetracker_ogr_interfaces.IOgr, inherit=True)
     else:
         raise toolkit.ValidationError(
-            {'Plugin': ['DataPusher or Xloader Extension must be enabled']})
+            {'Plugin': ['DataPusher or Xloader or Resourcetracker_ogr Extension must be enabled']})
 
     queue_name = 'undefined'
     

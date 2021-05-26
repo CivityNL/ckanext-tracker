@@ -80,7 +80,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
             else:
                 self._before_show(resource_dict, configuration)
         else:
-            log.debug('Either Geoserver connection have not been configured or this resource is not datastore_active')
+            # log.debug('Either Geoserver connection have not been configured or this resource is not datastore_active')
             self.set_dict_elements(resource_dict, None, None, None)
 
     def set_dict_elements(self, resource_dict, ows_url, layer_name, feature_type_name):
@@ -106,7 +106,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                                    configuration.workspace_name + ':' + resource_dict['id'],
                                    configuration.workspace_name + ':' + resource_dict['id'])
         else:
-            log.debug('Did not find a corresponding featureType for {id}'.format(id=resource_dict['id']))
+            # log.debug('Did not find a corresponding featureType for {id}'.format(id=resource_dict['id']))
             self.set_dict_elements(resource_dict, None, None, None)
 
     def _before_show_using_local_cache(self, resource_dict, configuration):
@@ -128,7 +128,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 configuration.workspace_name + ':' + resource_dict['id']
             )
         else:
-            log.debug('Did not find a corresponding featureType for {id} in local cache'.format(id=resource_dict['id']))
+            # log.debug('Did not find a corresponding featureType for {id} in local cache'.format(id=resource_dict['id']))
             self.set_dict_elements(resource_dict, None, None, None)
 
     def should_update_local_cache(self, resource_dict=None):
