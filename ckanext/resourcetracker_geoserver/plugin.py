@@ -20,6 +20,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
 
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()
+    geoserver_link_field_name = 'geoserver_link_enabled'
 
     api = None
 
@@ -58,11 +59,18 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         }
 
     # IResourceController
-
     def after_create(self, context, resource):
-        log.info('after_create from {}, action: {}'.format(__name__, 'none'))
-        # Do not put a task on the geoserver queue in case of a create. Create
-        # should be handled by datastoretracker_geoserver.
+        pass
+
+    def after_update(self, context, resource):
+        # get package_info to check link
+        pkg_dict = toolkit.get_action("package_show")(context,{"id": resource["package_id"]})
+        if self.geoserver_link_field_name in pkg_dict and \
+                pkg_dict[self.geoserver_link_field_name] == 'True' and \
+                resource.get('layer_srid', False):
+            log.info('Linking to Geoserver')
+            # TODO harmonize before sending to worker
+            self.put_on_a_queue(context, resource, self.get_worker().create_datasource)
 
     def before_show(self, resource_dict):
         """
