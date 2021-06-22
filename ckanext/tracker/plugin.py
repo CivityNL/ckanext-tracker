@@ -9,6 +9,8 @@ import ckan.plugins.toolkit as toolkit
 from rq import Queue
 from rq.job import Job
 import re
+from datetime import date, datetime
+
 
 import logging
 
@@ -44,6 +46,13 @@ def get_user_apikey(user_id, target='source'):
         return None
     return None
 
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError("Type %s not serializable" % type(obj))
+
 
 class TrackerPluginException(Exception):
     pass
@@ -76,9 +85,9 @@ class TrackerPlugin(plugins.SingletonPlugin):
     def return_data(self, data):
         result = None
         if data is not None:
-            result = json.dumps(data)
+            # result = json.dumps(data)
+            result = json.dumps(data, default=json_serial) # Fix TypeError: datetime.datetime(...) is not JSON serializable
         return result
-
 
     def get_configuration_data(self, context):
         configuration_data = self.get_configuration_dict()
@@ -110,17 +119,22 @@ class TrackerPlugin(plugins.SingletonPlugin):
 
         license_list = self.get_action_data('license_list', context, {})
         # Get the first element from the licence list, that matches the license ID and return it's URL
-        package_data['license_url'] = next((license['url'] for license in license_list if license["id"] == package_data['license_id']), None)
+        package_data['license_url'] = next((license.get('url', None) for license in license_list if license["id"] == package_data.get('license_id', None)), None)
 
         # Get the organization with GeoNetwork URL and credentials
         if package_data is not None:
-            organization_data = self.get_action_data('organization_show', context, {'id': package_data['organization']['id']})
+            organization_data = self.get_action_data('organization_show',
+                                                     context,
+                                                     {'id': package_data.get('organization', {}).get('id', None)}
+                                                     )
             if organization_data is not None:
                 # Include the GeoNetwork URL and credentials in the organization in the package
                 package_data['organization']['geonetwork_url'] = organization_data.get('geonetwork_url', None)
                 package_data['organization']['geonetwork_password'] = organization_data.get('geonetwork_password', None)
                 package_data['organization']['geonetwork_username'] = organization_data.get('geonetwork_username', None)
             else:
+                if not package_data.get('organization', None):
+                    package_data['organization'] = dict()
                 package_data['organization']['geonetwork_url'] = None
                 package_data['organization']['geonetwork_password'] = None
                 package_data['organization']['geonetwork_username'] = None
