@@ -18,6 +18,8 @@ class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
     plugins.implements(plugins.IResourceUrlChange)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
+    plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IRoutes, inherit=True)
 
     queue_name = 'ogr'
     worker = OgrWorkerWrapper()
@@ -63,3 +65,19 @@ class Resourcetracker_OgrPlugin(resourcetracker.ResourcetrackerPlugin):
 
     def after_update(self, context, resource):
         pass
+
+    def after_upload(self, context, resource_dict, dataset_dict):
+        pass
+    # IConfigurer
+
+    def update_config(self, config_):
+        toolkit.add_template_directory(config_, 'templates')
+
+    # IRoutes
+
+    def before_map(self, m):
+        m.connect(
+            'resource_data_ogr', '/dataset/{id}/resource_data/{resource_id}',
+            controller='ckanext.resourcetracker_ogr.controllers:ResourceDataController',
+            action='resource_data', ckan_icon='cloud-upload')
+        return m
