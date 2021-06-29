@@ -13,10 +13,10 @@ class ResourceDataController(p.toolkit.BaseController):
     plugins.implements(plugins.IConfigurable)
     ogr = Resourcetracker_OgrPlugin()
 
-    def resource_data(self, package_id, resource_id):
+    def resource_data(self, id, resource_id):
         try:
             p.toolkit.c.pkg_dict = p.toolkit.get_action('package_show')(
-                None, {'id': package_id}
+                None, {'id': id}
             )
             p.toolkit.c.resource = p.toolkit.get_action('resource_show')(
                 None, {'id': resource_id}
@@ -30,7 +30,7 @@ class ResourceDataController(p.toolkit.BaseController):
             p.toolkit.redirect_to(
                 controller='ckanext.resourcetracker_ogr.controllers:ResourceDataController',
                 action='resource_data',
-                id=package_id,
+                id=id,
                 resource_id=resource_id
             )
         #TODO build a status call to get the datastore call progress (as built for xloader)
