@@ -2,6 +2,8 @@ from ckanext.tracker.plugin import TrackerPluginException
 import ckanext.packagetracker_ckantockan.plugin as packagetracker_ckantockan
 from worker.ckan_to_ckan.oneckan import CkanToOneCkanWorkerWrapper
 from mapper.oneckan.mapper_oneckan import MapperOneCkan
+from helpers import  get_packagetracker_ckantockan_badge
+import ckan.plugins as plugins
 import logging
 
 log = logging.getLogger(__name__)
@@ -16,6 +18,8 @@ class TriggerDeleteException(TrackerPluginException):
 
 
 class Packagetracker_Ckantockan_OneCkanPlugin(packagetracker_ckantockan.Packagetracker_CkantockanPlugin):
+    plugins.implements(plugins.ITemplateHelpers)
+
     worker = CkanToOneCkanWorkerWrapper()
     mapper = MapperOneCkan()
 
@@ -48,3 +52,10 @@ class Packagetracker_Ckantockan_OneCkanPlugin(packagetracker_ckantockan.Packaget
             pass
         else:
             pass
+
+    # ITemplateHelpers
+
+    def get_helpers(self):
+        return {
+            'get_packagetracker_ckantockan_badge': get_packagetracker_ckantockan_badge
+        }

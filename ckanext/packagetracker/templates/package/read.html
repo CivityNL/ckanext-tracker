@@ -1,0 +1,6 @@
+{% ckan_extends %}
+
+{% block page_heading %}
+    {{ super() }}
+    {{ h.get_packagetracker_ckantockan_badge(pkg) | safe }}
+{% endblock %}
