@@ -67,3 +67,9 @@ class PackagetrackerPlugin(tracker.TrackerPlugin):
         else:
             package_data = json.dumps(Package.to_dict(package))
         return package_data
+
+    def get_task_entity_id(self, context, data):
+        return data['id']
+
+    def get_task_entity_type(self, context, data):
+        return "package"

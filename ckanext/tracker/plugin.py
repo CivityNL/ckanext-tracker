@@ -151,6 +151,8 @@ class TrackerPlugin(plugins.SingletonPlugin):
         return self.return_data(datadictionary_data)
 
     def get_configuration_dict(self):
+        DEFAULT_USERNAME = 'automation'
+        DEFAULT_SOURCE_URL = toolkit.config.get('ckan.site_url')
         conf_dict = {
             "database_url": toolkit.config.get(
                 'ckan.datastore.write_url'
@@ -215,6 +217,7 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.command.ogr2ogr'.format(self.name),
                 "ogr2ogr"
             ),
+            "plugin_name": self.name,
             "remote_ckan_host": toolkit.config.get(
                 'ckanext.{}.remote_ckan_host'.format(self.name)
             ),
@@ -228,16 +231,16 @@ class TrackerPlugin(plugins.SingletonPlugin):
                 'ckanext.{}.remote_ckan_user'.format(self.name)
             ),
             "source_ckan_host": toolkit.config.get(
-                'ckanext.{}.source_ckan_host'.format(self.name)
+                'ckanext.{}.source_ckan_host'.format(self.name), DEFAULT_SOURCE_URL
             ),
             "source_ckan_org": toolkit.config.get(
                 'ckanext.{}.source_ckan_org'.format(self.name)
             ),
             "source_ckan_user": toolkit.config.get(
-                'ckanext.{}.source_ckan_user'.format(self.name)
+                'ckanext.{}.source_ckan_user'.format(self.name), DEFAULT_USERNAME
             ),
             "source_user_api_key": get_user_apikey(toolkit.config.get(
-                'ckanext.{}.source_ckan_user'.format(self.name))
+                'ckanext.{}.source_ckan_user'.format(self.name), DEFAULT_USERNAME)
             ),
             "storage_path": toolkit.config.get(
                 'ckan.storage_path'
@@ -260,8 +263,11 @@ class TrackerPlugin(plugins.SingletonPlugin):
             job_data = self.get_data(context, data)
             job = self.create_job(context, job_data, command)
             self.before_enqueue(context, data, job)
+            task = self.upsert_task(context, data, job)
             q = Queue(self.get_queue_name(), connection=self.get_connection())
             q.enqueue_job(job)
+            if task is not None:
+                self.update_task(context, task.get("id"), state="pending")
             self.after_enqueue(context, data, job)
         except TrackerPluginException as error:
             self.handle_error(context, data, command, error)
@@ -303,3 +309,78 @@ class TrackerPlugin(plugins.SingletonPlugin):
 
     def get_configuration(self):
         return self.configuration
+
+    # Task Handling (see also `put_on_a_queue` method):
+    # DEV-3293 required feedback from the workers for which the TaskStatus model is being used and the corresponding
+    # `task_status_show` and `task_status_update` API actions. General idea is to have for each package/plugin and
+    # resource/plugin combination a TaskStatus which contains information about the current task being pending or
+    # executed (so no trail).
+
+    # Create a TaskStatus when none exist yet with the default value properties `job_id` and `job_command`
+    def create_task(self, context, data, job):
+        task_dict = {
+            "task_type": self.name,
+            "key": self.name,
+            "entity_id": self.get_task_entity_id(context, data),
+            "entity_type": self.get_task_entity_type(context, data),
+            "state": "created"
+        }
+        value_dict = {
+            "job_id": job.id,
+            "job_command": job.func_name
+        }
+        task_dict['value'] = json.dumps(value_dict)
+        created_task = self.get_action_data("task_status_update", context, task_dict)
+        return created_task
+
+    # Update a TaskStatus identified by task_id with a state (required), value properties and error message (optional).
+    # The value is a JSON stored as a string, which why the json module is involved in updating that field
+    def update_task(self, context, task_id, state, value=None, error=None):
+        updated_task = None
+        task = self.get_action_data("task_status_show", context, {"id": task_id})
+        if task is not None:
+            update_task_dict = {
+                "id": task_id,
+                "entity_id": task.get("entity_id"),
+                "task_type": task.get("task_type"),
+                "entity_type": task.get("entity_type"),
+                "key": task.get("key"),
+                "state": state,
+                "error": error
+            }
+            if value is not None and isinstance(value, dict):
+                current_value = task.get("value", None)
+                if current_value:
+                    current_value_dict = json.loads(current_value)
+                    current_value_dict.update(value)
+                    update_task_dict['value'] = json.dumps(current_value_dict)
+                else:
+                    update_task_dict['value'] = json.dumps(value)
+            updated_task = self.get_action_data("task_status_update", context, update_task_dict)
+        return updated_task
+
+    # Upsert a TaskStatus (update if exists and otherwise create)
+    def upsert_task(self, context, data, job):
+        task_dict = {
+            "entity_id": self.get_task_entity_id(context, data),
+            "task_type": self.name,
+            "key": self.name
+        }
+        task = self.get_action_data("task_status_show", context, task_dict)
+        if task is None:
+            task = self.create_task(context, data, job)
+        else:
+            value_dict = {
+                "job_id": job.id,
+                "job_command": job.func_name
+            }
+            task = self.update_task(context, task.get("id"), "created", value_dict, error=None)
+        return task
+
+    # This should return the correct entity_id (being package_id, resource_id, whatever). Should be implemented
+    def get_task_entity_id(self, context, data):
+        return None
+
+    # This should return the correct entity_type (being 'package', 'resource', whatever). Should be implemented
+    def get_task_entity_type(self, context, data):
+        return None
