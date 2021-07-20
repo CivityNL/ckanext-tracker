@@ -46,8 +46,8 @@ def create_badge(color, text):
             <path fill="url(#b)" d="M0 0h200v20H0z"/>
         </g>
         <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
-            <text x="50" y="15" fill="#010101" fill-opacity=".3">Dataplatfrom</text>
-            <text x="50" y="14">Dataplatfrom</text>
+            <text x="50" y="15" fill="#010101" fill-opacity=".3">Dataplatform</text>
+            <text x="50" y="14">Dataplatform</text>
             <text x="150" y="15" fill="#010101" fill-opacity=".3">{text}</text>
             <text x="150" y="14">{text}</text>
         </g>
