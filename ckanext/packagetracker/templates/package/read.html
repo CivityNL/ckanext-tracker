@@ -2,5 +2,6 @@
 
 {% block page_heading %}
     {{ super() }}
-    {{ h.get_packagetracker_ckantockan_badge(pkg) | safe }}
+{# Commented out until Rotterdam approves the UI element (needs translation and handling on not showing for cases that dont link) #}
+{#  {{ h.get_packagetracker_ckantockan_badge(pkg) | safe }} #}
 {% endblock %}

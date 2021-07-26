@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 def get_packagetracker_ckantockan_badge(pkg_dict):
     package_id = pkg_dict.get('id', None)
+    # TODO check if the "link to dataplatform field" is enabled, otherwise don't show the badge.
     if not package_id:
         return ''
     data_dict = {'entity_id': package_id,
