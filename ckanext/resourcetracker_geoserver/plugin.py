@@ -94,7 +94,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
     def set_dict_elements(self, resource_dict, ows_url, layer_name, feature_type_name):
         resource_dict["ows_url"] = ows_url
         resource_dict["wms_layer_name"] = layer_name
-        resource_dict["wfs_featuretype_name"] = feature_type_name
+        resource_dict["wfs_featuretype_name"] = get_resourcetracker_geoserver_wfs(resource_dict)
 
     def _before_show(self, resource_dict, configuration):
         """
