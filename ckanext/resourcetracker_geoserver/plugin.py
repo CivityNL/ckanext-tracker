@@ -89,12 +89,13 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 self._before_show(resource_dict, configuration)
         else:
             # log.debug('Either Geoserver connection have not been configured or this resource is not datastore_active')
-            self.set_dict_elements(resource_dict, None, None, None)
+            self.set_dict_elements(resource_dict, None, None)
 
-    def set_dict_elements(self, resource_dict, ows_url, layer_name, feature_type_name):
+    def set_dict_elements(self, resource_dict, ows_url, layer_name):
         resource_dict["ows_url"] = ows_url
-        resource_dict["wms_layer_name"] = layer_name
-        resource_dict["wfs_featuretype_name"] = get_resourcetracker_geoserver_wfs(resource_dict)
+        resource_dict["ows_layer"] = layer_name
+        resource_dict["wms_url"] = get_resourcetracker_geoserver_wms(resource_dict)
+        resource_dict["wfs_url"] = get_resourcetracker_geoserver_wfs(resource_dict)
 
     def _before_show(self, resource_dict, configuration):
         """
@@ -111,11 +112,10 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
             output_url += '/ows?'
             self.set_dict_elements(resource_dict, output_url,
-                                   configuration.workspace_name + ':' + resource_dict['id'],
                                    configuration.workspace_name + ':' + resource_dict['id'])
         else:
             # log.debug('Did not find a corresponding featureType for {id}'.format(id=resource_dict['id']))
-            self.set_dict_elements(resource_dict, None, None, None)
+            self.set_dict_elements(resource_dict, None, None)
 
     def _before_show_using_local_cache(self, resource_dict, configuration):
         # type: (dict, Configuration) -> None
@@ -132,12 +132,11 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
             self.set_dict_elements(
                 resource_dict,
                 output_url,
-                configuration.workspace_name + ':' + resource_dict['id'],
                 configuration.workspace_name + ':' + resource_dict['id']
             )
         else:
             # log.debug('Did not find a corresponding featureType for {id} in local cache'.format(id=resource_dict['id']))
-            self.set_dict_elements(resource_dict, None, None, None)
+            self.set_dict_elements(resource_dict, None, None)
 
     def should_update_local_cache(self, resource_dict=None):
         """
