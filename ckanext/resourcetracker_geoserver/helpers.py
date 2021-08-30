@@ -8,7 +8,7 @@ def get_resourcetracker_geoserver_wfs(res):
         'service': 'WFS',
         'version': '1.0.0',
         'request': 'GetFeature',
-        'typeName': res.get("wms_layer_name"),
+        'typeName': res.get("ows_layer"),
         'maxFeatures': 50,
         'outputFormat': 'application/json'
     }
@@ -25,7 +25,7 @@ def get_resourcetracker_geoserver_wms(res):
         'service': 'WMS',
         'version': '1.1.0',
         'request': 'GetMap',
-        'layers': res.get("wms_layer_name"),
+        'layers': res.get("ows_layer"),
         'bbox': get_bbox(res),
         'width': 768,
         'height': 384,
