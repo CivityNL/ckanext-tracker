@@ -6,7 +6,7 @@ def get_resourcetracker_geoserver_wfs(res):
     url = res.get("ows_url")
     params_dict = {
         'service': 'WFS',
-        'version': '1.0.0',
+        'version': '2.0.0',
         'request': 'GetFeature',
         'typeName': res.get("ows_layer"),
         'maxFeatures': 50,
