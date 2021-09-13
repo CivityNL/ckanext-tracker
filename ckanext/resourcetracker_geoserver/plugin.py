@@ -110,9 +110,8 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         feature_type = self.api.read_feature_type(workspace, data_store, resource_dict['id'])
         if feature_type is not None:
             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
-            output_url += '/ows?'
-            self.set_dict_elements(resource_dict, output_url,
-                                   configuration.workspace_name + ':' + resource_dict['id'])
+            output_url += '/geoserver/{workspace}/ows?'.format(workspace=configuration.workspace_name)
+            self.set_dict_elements(resource_dict, output_url, resource_dict['id'])
         else:
             # log.debug('Did not find a corresponding featureType for {id}'.format(id=resource_dict['id']))
             self.set_dict_elements(resource_dict, None, None)
@@ -128,12 +127,8 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
             self.update_local_cache(configuration)
         if self.local_cache is not None and resource_dict['id'] in self.local_cache:
             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
-            output_url += '/ows?'
-            self.set_dict_elements(
-                resource_dict,
-                output_url,
-                configuration.workspace_name + ':' + resource_dict['id']
-            )
+            output_url += '/geoserver/{workspace}/ows?'.format(workspace=configuration.workspace_name)
+            self.set_dict_elements(resource_dict, output_url, resource_dict['id'])
         else:
             # log.debug('Did not find a corresponding featureType for {id} in local cache'.format(id=resource_dict['id']))
             self.set_dict_elements(resource_dict, None, None)
