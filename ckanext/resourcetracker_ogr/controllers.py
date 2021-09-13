@@ -1,8 +1,10 @@
+import logging
+
 import ckan.plugins as p
 import ckan.plugins as plugins
 from ckan import model
 from ckanext.resourcetracker_ogr.plugin import Resourcetracker_OgrPlugin
-import logging
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ class ResourceDataController(p.toolkit.BaseController):
 
         if p.toolkit.request.method == 'POST':
             context = {'model': model, 'ignore_auth': True, 'defer_commit': True, 'user': 'automation'}
-            self.ogr.put_on_a_queue(context, p.toolkit.c.resource, self.ogr.get_worker().create_resource)
+            self.ogr.put_resource_on_a_queue(context, p.toolkit.c.resource, self.ogr.get_worker().create_resource)
             p.toolkit.redirect_to(
                 controller='ckanext.resourcetracker_ogr.controllers:ResourceDataController',
                 action='resource_data',

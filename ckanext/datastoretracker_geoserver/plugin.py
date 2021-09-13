@@ -1,11 +1,14 @@
-import ckanext.datastoretracker.plugin as datastoretracker
-from worker.geoserver import GeoServerWorkerWrapper
 import logging
+
+from ckanext.tracker.classes.datastore_tracker import DataStoreTrackerPlugin
+from worker.geoserver import GeoServerWorkerWrapper
 
 log = logging.getLogger(__name__)
 
 
-class Datastoretracker_GeoserverPlugin(datastoretracker.DatastoretrackerPlugin):
+# IS THIS TRACKER EVEN USED/ACTIVE? IT DOEST NOT SEEM TO DO ANYTHING
+class Datastoretracker_GeoserverPlugin(DataStoreTrackerPlugin):
+    """No idea what the use is of this Tracker. If you know please add it here"""
 
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()

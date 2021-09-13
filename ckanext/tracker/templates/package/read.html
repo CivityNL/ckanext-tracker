@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{% block page_heading %}
+    {{ super() }}
+    <br/>
+    {% for badge in h.get_tracker_badges('package', pkg.id) %}
+        {{ badge | safe }}
+    {% endfor %}
+{% endblock %}
