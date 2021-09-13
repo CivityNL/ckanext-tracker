@@ -1,22 +1,25 @@
-import logging
-
-import ckanext.resourcetracker.plugin as resourcetracker
-import ckan.plugins.toolkit as toolkit
-from worker.geoserver import GeoServerWorkerWrapper
-import ckan.plugins as plugins
-from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms
-from domain import Configuration
 import datetime
-from worker.geoserver.rest.model import Workspace, DataStore
+import logging
+import threading
+import ckan.plugins as plugins
+import ckan.plugins.toolkit as toolkit
+from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
+from domain import Configuration
+from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms
+from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
+from worker.geoserver.rest.model import Workspace, DataStore
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
-class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
+class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
+    """No idea what the use is of this Tracker. If you know please add it here"""
+
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IConfigurable)
+    plugins.implements(plugins.IConfigurer)
 
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()
@@ -28,6 +31,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
     local_cache_refresh_rate = 300
     local_cache = None
     local_cache_last_updated = None
+    local_cache_thread_active = None
 
     DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
@@ -36,11 +40,13 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         super(Resourcetracker_GeoserverPlugin, self).configure(config)
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), None)
         self.local_cache_active = toolkit.config.get('ckanext.{}.geoserver.local_cache_active'.format(self.name), True)
-        configuration = Configuration.from_dict(self.get_configuration_dict())
+        configuration = self.get_configuration()
         if geoserver_url is not None:
             self.api = GeoServerRestApi(configuration)
             if self.api is not None and self.local_cache_active is True:
-                self.update_local_cache(configuration)
+                log.debug("starting thread to update local cache")
+                self.local_cache_thread_active = True
+                threading.Thread(target=self.update_local_cache, args=(configuration, self.api, self.name,)).start()
         else:
             self.local_cache_active = False
             log.debug("No URL for geoserver given. Will ignore all geoserver related checks")
@@ -70,7 +76,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 resource.get('layer_srid', False):
             log.info('Linking to Geoserver')
             # TODO harmonize before sending to worker
-            self.put_on_a_queue(context, resource, self.get_worker().create_datasource)
+            self.put_resource_on_a_queue(context, resource, self.get_worker().create_datasource)
 
     def before_show(self, resource_dict):
         """
@@ -80,7 +86,7 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         :param resource_dict:
         :return:
         """
-        configuration = Configuration.from_dict(self.get_configuration_dict())
+        configuration = self.get_configuration()
         # only do something if the resource is datastore_active and we have a geoserver api configured
         if resource_dict['datastore_active'] is True and self.api is not None:
             if self.local_cache_active is True:
@@ -125,7 +131,9 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         @param configuration: Configuration object
         """
         if self.should_update_local_cache(resource_dict):
-            self.update_local_cache(configuration)
+            log.debug("starting thread to update local cache")
+            self.local_cache_thread_active = True
+            threading.Thread(target=self.update_local_cache, args=(configuration, self.api, self.name,)).start()
         if self.local_cache is not None and resource_dict['id'] in self.local_cache:
             output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
             output_url += '/ows?'
@@ -154,6 +162,8 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         result = False
         if self.local_cache_active is False or self.api is None:
             result = False
+        elif self.local_cache_thread_active is True:
+            result = False
         elif self.local_cache_last_updated is None:
             result = True
         elif self.local_cache_refresh_rate is not None and (datetime.datetime.now() - self.local_cache_last_updated).total_seconds() > self.local_cache_refresh_rate:
@@ -169,7 +179,8 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
                 result = True
         return result
 
-    def update_local_cache(self, configuration):
+    @staticmethod
+    def update_local_cache(configuration, api, name):
         # type: (Configuration) -> None
         """
         This method will fetch the names (which are equal to the resource id's) from all the feature_types belonging to
@@ -177,16 +188,18 @@ class Resourcetracker_GeoserverPlugin(resourcetracker.ResourcetrackerPlugin):
         @param configuration: Configuration object
         @rtype: None
         """
-        data = self.api.get(
+        data = api.get(
             'rest/workspaces/' + configuration.workspace_name + '/datastores/' + configuration.data_store_name,
             'featuretypes')
         result = None
         if data is not None and "featureTypes" in data and "featureType" in data["featureTypes"]:
             result = [feature_type["name"] for feature_type in data["featureTypes"]["featureType"]]
-        self.local_cache = result
-        self.local_cache_last_updated = datetime.datetime.now()
-        if self.local_cache is None:
-            geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), None)
+        Resourcetracker_GeoserverPlugin.local_cache = result
+        Resourcetracker_GeoserverPlugin.local_cache_last_updated = datetime.datetime.now()
+        Resourcetracker_GeoserverPlugin.local_cache_thread_active = False
+        log.debug("finished thread to update local cache")
+        if Resourcetracker_GeoserverPlugin.local_cache is None:
+            geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(name), None)
             log.debug("Something went wrong fetching the current feature types from geoserver @ {geoserver_url} "
                       "using workspace {workspace} and data_store {data_store}!"
                       .format(geoserver_url=geoserver_url,

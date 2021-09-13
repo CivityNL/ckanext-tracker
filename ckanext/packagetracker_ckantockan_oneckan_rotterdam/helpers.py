@@ -1,9 +1,6 @@
-import ckan.plugins.toolkit as toolkit
-import ckan.model as model
-from sqlalchemy import func
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
-
 import logging
+
+import ckan.plugins.toolkit as toolkit
 
 log = logging.getLogger(__name__)
 

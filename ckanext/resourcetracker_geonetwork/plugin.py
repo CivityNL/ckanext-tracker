@@ -1,27 +1,32 @@
-import logging
-import urlparse
-
-import ckanext.resourcetracker.plugin as resourcetracker
-
-import re
 import datetime
-
+import logging
+import re
+import urlparse
+import threading
+import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckan.model import Package, GroupExtra
-import ckan.plugins as plugins
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
-
+from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
+from domain import Organization
 from worker.geonetwork import GeoNetworkWorkerWrapper
 from worker.geonetwork.rest import GeoNetworkRestApi
-from domain import Organization
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
-class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
+class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
+    """
+    This Tracker basically does nothing tracking wise except for UI changes and the after_show for a resource to return
+    the geonetwork URL of this resource. To prevent accessing the geonetwork for every single after_show a cache can be
+    activated by setting 'local_cache_active' to True (or by using 'ckanext.{}.geonetwork.local_cache_active' in the ini).
+    This will then get all the identifiers from the source every 'local_cache_refresh_rate' seconds, except if the
+    requested resource has been updated since the last refresh
+    """
+
     plugins.implements(plugins.IConfigurable)
+    plugins.implements(plugins.IConfigurer)
 
     queue_name = 'geoserver'
     worker = GeoNetworkWorkerWrapper()
@@ -30,6 +35,7 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
     local_cache_refresh_rate = 300
     local_cache = {}
     local_cache_last_updated = {}
+    local_cache_thread_active = {}
 
     DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
@@ -80,11 +86,6 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                     organization_dict[group_extra.key] = group_extra.value
                 organization = Organization.from_dict(organization_dict)
                 if organization.geonetwork_url:
-                    # log.debug(
-                    #     'Connected to GeoNetwork {0}, datastore active {1}, find {2}. Investigate further.'.format(
-                    #         organization.geonetwork_url, resource_dict['datastore_active'],
-                    #         organization.geonetwork_url.find('undefined')
-                    #     ))
                     if self.local_cache_active is True:
                         self._before_show_using_local_cache(resource_dict, organization)
                     else:
@@ -107,17 +108,21 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         api = GeoNetworkRestApi(organization)
         record = api.read_record(resource_dict['id'])
         if record is not None:
-            set_dict_elements(resource_dict, organization.geonetwork_url)
+            self.set_dict_elements(resource_dict, organization.geonetwork_url)
 
     def _before_show_using_local_cache(self, resource_dict, organization):
         if self.should_update_local_cache(organization, resource_dict):
-            self.update_local_cache(organization)
+            log.debug("starting thread to update local cache for organization = {}".format(organization.organization_id))
+            self.local_cache_thread_active[organization.organization_id] = True
+            threading.Thread(target=self.update_local_cache, args=(organization,)).start()
         if organization.organization_id in self.local_cache and self.local_cache[organization.organization_id] is not None and resource_dict['id'] in self.local_cache[organization.organization_id]:
-            set_dict_elements(resource_dict, organization.geonetwork_url)
+            self.set_dict_elements(resource_dict, organization.geonetwork_url)
 
     def should_update_local_cache(self, organization, resource_dict=None):
         result = False
         if self.local_cache_active is False or not organization.geonetwork_url:
+            result = False
+        elif self.local_cache_thread_active.get(organization.organization_id, False) is True:
             result = False
         elif organization.organization_id not in self.local_cache_last_updated:
             result = True
@@ -134,7 +139,8 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
                 result = True
         return result
 
-    def update_local_cache(self, organization):
+    @staticmethod
+    def update_local_cache(organization):
         """
         This method will fetch the names (which are equal to the resource id's) from all the feature_types belonging to
         the workspace and data_store from the configuration and will update the local_cache_last_updated
@@ -143,28 +149,32 @@ class Resourcetracker_GeonetworkPlugin(resourcetracker.ResourcetrackerPlugin):
         """
         result = None
         api = GeoNetworkRestApi(organization)
-        result, nextRecord = self.get_records_and_nextrecord(api)
+        result, nextRecord = Resourcetracker_GeonetworkPlugin.get_records_and_nextrecord(api)
         while nextRecord > 0:
-            data, nextRecord = self.get_records_and_nextrecord(api)
+            data, nextRecord = Resourcetracker_GeonetworkPlugin.get_records_and_nextrecord(api, nextRecord)
             result += data
-        self.local_cache[organization.organization_id] = result
-        self.local_cache_last_updated[organization.organization_id] = datetime.datetime.now()
+        Resourcetracker_GeonetworkPlugin.local_cache[organization.organization_id] = result
+        Resourcetracker_GeonetworkPlugin.local_cache_last_updated[organization.organization_id] = datetime.datetime.now()
+        Resourcetracker_GeonetworkPlugin.local_cache_thread_active[organization.organization_id] = False
+        log.debug("finished thread to update local cache for organization = {}".format(organization.organization_id))
 
-    def get_records_url(self, limit=100, offset=1):
+    @staticmethod
+    def get_records_url(limit=100, offset=1):
         return 'csw?request=GetRecords&service=CSW&version=2.0.2&typeNames=csw%3ARecord&elementsetname=summary&maxRecords={limit}&outputSchema=csw:Record&resultType=results&startPosition={offset}'.\
             format(limit=limit, offset=offset)
 
-    def get_records_and_nextrecord(self, api, offset=1):
+    @staticmethod
+    def get_records_and_nextrecord(api, offset=1):
         data = None
         records = []
         nextRecord = 0
         try:
-            data = api.get('geonetwork/srv/eng', self.get_records_url(offset=offset))
+            data = api.get('geonetwork/srv/eng', Resourcetracker_GeonetworkPlugin.get_records_url(offset=offset))
         except:
             pass
             # log.debug("something went wrong with the GetRecords from {}".format(api.url))
         if data is not None:
-            records = REGEX_IDENTIFIER.findall(text)
-            nextRecordSearch = REGEX_NEXT_RECORD.search(data)
+            records = Resourcetracker_GeonetworkPlugin.REGEX_IDENTIFIER.findall(data)
+            nextRecordSearch = Resourcetracker_GeonetworkPlugin.REGEX_NEXT_RECORD.search(data)
             nextRecord = int(nextRecordSearch.group(0))
         return records, nextRecord

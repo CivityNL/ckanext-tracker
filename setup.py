@@ -81,16 +81,13 @@ setup(
     entry_points='''
         [ckan.plugins]
 
-        datastoretracker=ckanext.datastoretracker.plugin:DatastoretrackerPlugin
         datastoretracker_geoserver=ckanext.datastoretracker_geoserver.plugin:Datastoretracker_GeoserverPlugin
         datastoretracker_xlstocsv=ckanext.datastoretracker_xlstocsv.plugin:Datastoretracker_XlsToCsvPlugin
-        packagetracker=ckanext.packagetracker.plugin:PackagetrackerPlugin
         packagetracker_ckantockan=ckanext.packagetracker_ckantockan.plugin:Packagetracker_CkantockanPlugin
         packagetracker_ckantockan_donl=ckanext.packagetracker_ckantockan_donl.plugin:Packagetracker_Ckantockan_DonlPlugin
         packagetracker_ckantockan_oneckan=ckanext.packagetracker_ckantockan_oneckan.plugin:Packagetracker_Ckantockan_OneCkanPlugin
         packagetracker_ckantockan_oneckan_rotterdam=ckanext.packagetracker_ckantockan_oneckan_rotterdam.plugin:Packagetracker_Ckantockan_OneCkan_RotterdamPlugin
         packagetracker_ogr=ckanext.packagetracker_ogr.plugin:Packagetracker_OgrPlugin
-        resourcetracker=ckanext.resourcetracker.plugin:ResourcetrackerPlugin
         resourcetracker_ckantockan=ckanext.resourcetracker_ckantockan.plugin:Resourcetracker_CkantockanPlugin
         resourcetracker_ckantockan_donl=ckanext.resourcetracker_ckantockan_donl.plugin:Resourcetracker_Ckantockan_DonlPlugins
         resourcetracker_ckantockan_oneckan=ckanext.resourcetracker_ckantockan_oneckan.plugin:Resourcetracker_Ckantockan_OneCkanPlugin

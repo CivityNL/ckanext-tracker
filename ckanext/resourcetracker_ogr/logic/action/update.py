@@ -1,11 +1,12 @@
 
-import ckan.plugins as plugins
-import ckan.logic as logic
-import ckanext.datapusher.interfaces as datapusher_interfaces
-import ckanext.xloader.interfaces as xloader_interfaces
-import ckanext.resourcetracker_ogr.interface as resourcetracker_ogr_interfaces
-
 import logging
+
+import ckan.logic as logic
+import ckan.plugins as plugins
+import ckanext.datapusher.interfaces as datapusher_interfaces
+import ckanext.resourcetracker_ogr.interface as resourcetracker_ogr_interfaces
+import ckanext.xloader.interfaces as xloader_interfaces
+
 logging.basicConfig()
 log = logging.getLogger(__name__)
 

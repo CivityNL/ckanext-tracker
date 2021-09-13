@@ -1,0 +1,19 @@
+{% extends "package/resource_edit_base.html" %}
+
+{% block primary_content_inner %}
+  {% set action = h.url_for(
+    controller='ckanext.tracker.controllers:TrackerController',
+    action='resource_data', id=res.package_id, resource_id=res.id) %}
+
+    {% for status in h.get_tracker_statuses(['resource','datastore'], res.id) %}
+        {% snippet 'tracker/snippets/job_details.html', job=status %}
+        <form method="post" action="{{ action }}" >
+            <input type="hidden" id="name" name="name" value="{{ status.key }}">
+            <input type="hidden" id="type" name="type" value="{{ status.entity_type }}">
+            <button class="btn btn-primary" type="submit">
+                <i class="fa fa-book"></i> {{ _('Upsert') }}
+            </button>
+        </form>
+    {% endfor %}
+
+{% endblock %}
