@@ -124,22 +124,23 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         This method will make sure a job is created and put on the queue and giving the correct feedback
         """
         task = None
+        job_context = context.copy()
         try:
-            job = self.create_job(context, entity_type, data, command)
-            self.before_enqueue(context, data, job)
-            task = upsert_task(context, self.name, entity_type, data, job)
+            job = self.create_job(job_context, entity_type, data, command)
+            self.before_enqueue(job_context, data, job)
+            task = upsert_task(job_context, self.name, entity_type, data, job)
             q = Queue(self.get_queue_name(), connection=self.get_connection())
             q.enqueue_job(job)
             if task is not None:
-                update_task(context, task.get("id"), state="pending")
-            self.after_enqueue(context, data, job)
+                update_task(job_context, task.get("id"), state="pending")
+            self.after_enqueue(job_context, data, job)
         except TrackerPluginException as error:
             log.warning("An expected error occured: {}".format(error.message))
-            self.handle_error(context, data, command, error)
+            self.handle_error(job_context, data, command, error)
         except Exception as unexpected_error:
             log.error("An unexpected error occured: {}".format(unexpected_error.message))
             if task is not None:
-                update_task(context, task.get("id"), state="error", error=unexpected_error.message)
+                update_task(job_context, task.get("id"), state="error", error=unexpected_error.message)
 
     def create_job(self, context, entity_type, data, command):
         """
