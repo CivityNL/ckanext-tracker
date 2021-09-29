@@ -1,5 +1,6 @@
 import urllib
-
+import logging
+log = logging.getLogger(__name__)
 
 def get_resourcetracker_geoserver_wfs(res):
     result = ''
@@ -38,6 +39,15 @@ def get_resourcetracker_geoserver_wms(res):
     return result
 
 def get_bbox(res):
-    bbox_raw = res.get('layer_extent', '-180.0,-90.0,180.0,90.0') # default value globe
-    bbox = bbox_raw.strip('[]')
+    # default_bbox = '5,45,15,60'
+    bbox_raw = res.get('layer_extent')
+    if (isinstance(bbox_raw, list)):
+        bbox = ', '.join(str(e) for e in bbox_raw)
+    elif (isinstance(bbox_raw, unicode)) or (isinstance(bbox_raw, str)):
+        bbox = bbox_raw.strip('[]')
+    else:
+        bbox = None
     return bbox
+
+
+
