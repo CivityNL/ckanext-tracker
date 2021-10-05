@@ -149,13 +149,13 @@ class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
         """
         result = None
         api = GeoNetworkRestApi(organization)
-        result, nextRecord = Resourcetracker_GeonetworkPlugin.get_records_and_nextrecord(api)
+        result, nextRecord = Resourcetracker_GeonetworkPlugin().get_records_and_nextrecord(api)
         while nextRecord > 0:
-            data, nextRecord = Resourcetracker_GeonetworkPlugin.get_records_and_nextrecord(api, nextRecord)
+            data, nextRecord = Resourcetracker_GeonetworkPlugin().get_records_and_nextrecord(api, nextRecord)
             result += data
-        Resourcetracker_GeonetworkPlugin.local_cache[organization.organization_id] = result
-        Resourcetracker_GeonetworkPlugin.local_cache_last_updated[organization.organization_id] = datetime.datetime.now()
-        Resourcetracker_GeonetworkPlugin.local_cache_thread_active[organization.organization_id] = False
+        Resourcetracker_GeonetworkPlugin().local_cache[organization.organization_id] = result
+        Resourcetracker_GeonetworkPlugin().local_cache_last_updated[organization.organization_id] = datetime.datetime.now()
+        Resourcetracker_GeonetworkPlugin().local_cache_thread_active[organization.organization_id] = False
         log.debug("finished thread to update local cache for organization = {}".format(organization.organization_id))
 
     @staticmethod
