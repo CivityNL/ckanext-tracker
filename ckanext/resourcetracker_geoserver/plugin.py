@@ -189,11 +189,11 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
         result = None
         if data is not None and "featureTypes" in data and "featureType" in data["featureTypes"]:
             result = [feature_type["name"] for feature_type in data["featureTypes"]["featureType"]]
-        Resourcetracker_GeoserverPlugin.local_cache = result
-        Resourcetracker_GeoserverPlugin.local_cache_last_updated = datetime.datetime.now()
-        Resourcetracker_GeoserverPlugin.local_cache_thread_active = False
+        Resourcetracker_GeoserverPlugin().local_cache = result
+        Resourcetracker_GeoserverPlugin().local_cache_last_updated = datetime.datetime.now()
+        Resourcetracker_GeoserverPlugin().local_cache_thread_active = False
         log.debug("finished thread to update local cache")
-        if Resourcetracker_GeoserverPlugin.local_cache is None:
+        if Resourcetracker_GeoserverPlugin().local_cache is None:
             geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(name), None)
             log.debug("Something went wrong fetching the current feature types from geoserver @ {geoserver_url} "
                       "using workspace {workspace} and data_store {data_store}!"
