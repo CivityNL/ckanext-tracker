@@ -2,16 +2,18 @@ import logging
 
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+from ckan.lib.plugins import DefaultTranslation
 import helpers
 
 log = logging.getLogger(__name__)
 
 
-class TrackerPlugin(plugins.SingletonPlugin):
+class TrackerPlugin(plugins.SingletonPlugin, DefaultTranslation):
+
     """
     This plugin will add UI for all the trackers based on the backend and the specific configuration of the trackers
     """
-
+    plugins.implements(plugins.ITranslation)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IRoutes, inherit=True)
