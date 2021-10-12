@@ -9,7 +9,7 @@
       "validators": "ignore_missing unicode",
       "form_snippet": "large_text.html",
       "form_attrs": {"data-module": "slug-preview-target"},
-      "form_placeholder": "My theme"
+      "form_placeholder": {"en":"My organization","nl":"Mijn Organisatie"}
     },
     {
       "field_name": "name",
@@ -22,7 +22,9 @@
       "field_name": "notes",
       "label": "Description",
       "form_snippet": "markdown.html",
-      "form_placeholder": "A little information about my group..."
+      "form_placeholder": {"en":"A little information about my organization...","nl":"Informatie over mijn organisatie..."}
+
+
     },
     {
       "field_name": "url",
@@ -39,14 +41,14 @@
     },
     {
       "field_name": "geonetwork_username",
-      "label": "GeoNetwork username",
+      "label": {"en":"GeoNetwork username","nl":"GeoNetwork gebruikersnaam"},
       "form_snippet": "text.html",
       "display_snippet": "text.html",
       "output_validators": "ignore_missing"
     },
     {
       "field_name": "geonetwork_password",
-      "label": "GeoNetwork password",
+      "label": {"en":"GeoNetwork password","nl":"GeoNetwork wachtwoord"},
       "form_snippet": "text.html",
       "display_snippet": "text.html",
       "output_validators": "ignore_missing"

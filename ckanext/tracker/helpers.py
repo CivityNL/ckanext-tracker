@@ -102,6 +102,8 @@ def create_badge(identifier, color, title, status):
     @param status: status to be shown (right side of the badge)
     @return: string containing the svg code
     """
+
+    status = toolkit._(status)
     title_width = calculate_length_text_in_pixels(title, 11)
     status_width = calculate_length_text_in_pixels(status, 11)
 

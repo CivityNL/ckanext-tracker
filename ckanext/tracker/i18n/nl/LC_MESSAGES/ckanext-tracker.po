@@ -1,0 +1,20 @@
+# Dutch translations for ckanext-tracker.
+# Copyright (C) 2018 ORGANIZATION
+# This file is distributed under the same license as the
+# ckanext-tracker
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2018.
+#
+
+# tracker/helpers.py: 107
+msgid "pending"
+msgstr "In behandeling"
+
+msgid "enqueued"
+msgstr "In wachtrij gezet"
+
+msgid "running"
+msgstr "Wordt uitgevoerd"
+
+msgid "success"
+msgstr "Geslaagd"
