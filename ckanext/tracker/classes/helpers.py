@@ -90,6 +90,10 @@ def get_configuration_dict(name):
             'ckanext.{}.contact.url'.format(name),
             "https://civity.nl"
         ),
+        "geoserver_layer_prefix": toolkit.config.get(
+            'ckanext.{}.geoserver.layer_prefix'.format(name),
+            None
+        ),
         "ogr2ogr_command": toolkit.config.get(
             'ckanext.{}.command.ogr2ogr'.format(name),
             "ogr2ogr"

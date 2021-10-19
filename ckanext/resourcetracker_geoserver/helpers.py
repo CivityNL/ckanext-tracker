@@ -38,6 +38,7 @@ def get_resourcetracker_geoserver_wms(res):
         result = url + params
     return result
 
+
 def get_bbox(res):
     # default_bbox = '5,45,15,60'
     bbox_raw = res.get('layer_extent')
@@ -50,4 +51,25 @@ def get_bbox(res):
     return bbox
 
 
+def get_feature_type_name(configuration, resource_dict):
+    """
+    In default settings, layer name should equal to resource_id.
+    Due to XML errors in Geoserver side when layer name (resource_id string) starts with a number,
+    a prefix string should be applied on the layer name. https://civity.atlassian.net/browse/DEV-3915.
+    """
+
+    geoserver_layer_prefix = configuration.geoserver_layer_prefix
+    feature_type_name = '{prefix}{resource_id}'.format(prefix=geoserver_layer_prefix, resource_id=resource_dict['id'])
+    log.debug('[helpers] get_feature_type_name: {name}'.format(name=feature_type_name))
+    return feature_type_name
+
+
+def get_resource_id_from_feature_type_name(configuration, feature_type_name):
+    """
+    In default settings, this returns the exact same value of variable 'feature_type_name'.
+    If a geoserver_layer_prefix is defined, it will strip of the prefix string.
+    """
+    geoserver_layer_prefix = configuration.geoserver_layer_prefix
+    resource_id = feature_type_name.lstrip(geoserver_layer_prefix)
+    return resource_id
 
