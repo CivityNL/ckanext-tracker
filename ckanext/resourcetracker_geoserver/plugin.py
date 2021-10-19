@@ -5,7 +5,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
 from domain import Configuration
-from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms
+from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms, get_feature_type_name, get_resource_id_from_feature_type_name
 from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
 from worker.geoserver.rest.model import Workspace, DataStore
@@ -24,6 +24,7 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()
     geoserver_link_field_name = 'geoserver_link_enabled'
+    ows_path = '/geoserver/{workspace}/ows?'  # Convert to ckan.config
 
     api = None
 
@@ -95,13 +96,21 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
                 self._before_show(resource_dict, configuration)
         else:
             # log.debug('Either Geoserver connection have not been configured or this resource is not datastore_active')
-            self.set_dict_elements(resource_dict, None, None)
+            self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=False)
 
-    def set_dict_elements(self, resource_dict, ows_url, layer_name):
-        resource_dict["ows_url"] = ows_url
-        resource_dict["ows_layer"] = layer_name
-        resource_dict["wms_url"] = get_resourcetracker_geoserver_wms(resource_dict)
-        resource_dict["wfs_url"] = get_resourcetracker_geoserver_wfs(resource_dict)
+    def populate_geoserver_metadata(self, configuration, resource_dict, should_populate_geoserver_metadata=False):
+        if should_populate_geoserver_metadata:
+            ows_url = configuration.source_ckan_host
+            ows_url += self.ows_path.format(workspace=configuration.workspace_name)
+            resource_dict["ows_url"] = ows_url
+            resource_dict["ows_layer"] = get_feature_type_name(configuration, resource_dict)
+            resource_dict["wms_url"] = get_resourcetracker_geoserver_wms(resource_dict)
+            resource_dict["wfs_url"] = get_resourcetracker_geoserver_wfs(resource_dict)
+        else:
+            resource_dict["ows_url"] = None
+            resource_dict["ows_layer"] = None
+            resource_dict["wms_url"] = None
+            resource_dict["wfs_url"] = None
 
     def _before_show(self, resource_dict, configuration):
         """
@@ -113,14 +122,11 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
         """
         workspace = Workspace(name=configuration.workspace_name)
         data_store = DataStore(name=configuration.data_store_name)
-        feature_type = self.api.read_feature_type(workspace, data_store, resource_dict['id'])
-        if feature_type is not None:
-            output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
-            output_url += '/geoserver/{workspace}/ows?'.format(workspace=configuration.workspace_name)
-            self.set_dict_elements(resource_dict, output_url, resource_dict['id'])
-        else:
-            # log.debug('Did not find a corresponding featureType for {id}'.format(id=resource_dict['id']))
-            self.set_dict_elements(resource_dict, None, None)
+        feature_type_name = get_feature_type_name(configuration, resource_dict)
+        feature_type = self.api.read_feature_type(workspace, data_store, feature_type_name)
+        feature_type_exists = feature_type is not None
+        self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=feature_type_exists)
+
 
     def _before_show_using_local_cache(self, resource_dict, configuration):
         # type: (dict, Configuration) -> None
@@ -133,13 +139,9 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
             log.debug("starting thread to update local cache")
             self.local_cache_thread_active = True
             threading.Thread(target=self.update_local_cache, args=(configuration, self.api, self.name,)).start()
-        if self.local_cache is not None and resource_dict['id'] in self.local_cache:
-            output_url = toolkit.config.get('ckanext.{}.source_ckan_host'.format(self.name))
-            output_url += '/geoserver/{workspace}/ows?'.format(workspace=configuration.workspace_name)
-            self.set_dict_elements(resource_dict, output_url, resource_dict['id'])
-        else:
-            # log.debug('Did not find a corresponding featureType for {id} in local cache'.format(id=resource_dict['id']))
-            self.set_dict_elements(resource_dict, None, None)
+        feature_type_exists_in_local_cache = self.local_cache is not None and resource_dict['id'] in self.local_cache
+        self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=feature_type_exists_in_local_cache)
+
 
     def should_update_local_cache(self, resource_dict=None):
         """
@@ -188,7 +190,7 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
             'featuretypes')
         result = None
         if data is not None and "featureTypes" in data and "featureType" in data["featureTypes"]:
-            result = [feature_type["name"] for feature_type in data["featureTypes"]["featureType"]]
+            result = [get_resource_id_from_feature_type_name(configuration, feature_type["name"]) for feature_type in data["featureTypes"]["featureType"]]
         Resourcetracker_GeoserverPlugin().local_cache = result
         Resourcetracker_GeoserverPlugin().local_cache_last_updated = datetime.datetime.now()
         Resourcetracker_GeoserverPlugin().local_cache_thread_active = False
@@ -200,3 +202,4 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
                       .format(geoserver_url=geoserver_url,
                               workspace=configuration.workspace_name,
                               data_store=configuration.data_store_name))
+
