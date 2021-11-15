@@ -2,12 +2,27 @@ import urllib
 import logging
 log = logging.getLogger(__name__)
 
+DEFAULT_WMS_VERSION = '1.3.0'
+DEFAULT_WFS_VERSION = '2.0.0'
+DEFAULT_WMS_GETMAP_WIDTH = 768
+DEFAULT_WMS_GETMAP_HEIGHT = 384
+DEFAULT_WMS_SRS = 'EPSG:4326'
+
+
+def get_wms_url(res):
+    return res.get('wms_url', None)
+
+
+def get_wfs_url(res):
+    return res.get('wfs_url', None)
+
+
 def get_resourcetracker_geoserver_wfs(res):
     result = ''
     url = res.get("ows_url")
     params_dict = {
         'service': 'WFS',
-        'version': '2.0.0',
+        'version': DEFAULT_WFS_VERSION,
         'request': 'GetFeature',
         'typeName': res.get("ows_layer"),
         'maxFeatures': 50,
@@ -24,13 +39,13 @@ def get_resourcetracker_geoserver_wms(res):
     url = res.get("ows_url")
     params_dict = {
         'service': 'WMS',
-        'version': '1.1.0',
+        'version': DEFAULT_WMS_VERSION,
         'request': 'GetMap',
         'layers': res.get("ows_layer"),
         'bbox': get_bbox(res),
-        'width': 768,
-        'height': 384,
-        'srs': 'EPSG:4326',
+        'width': DEFAULT_WMS_GETMAP_WIDTH,
+        'height': DEFAULT_WMS_GETMAP_HEIGHT,
+        'srs': DEFAULT_WMS_SRS,
         'format': 'image/png'
     }
     params = urllib.urlencode(params_dict)

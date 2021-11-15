@@ -36,6 +36,30 @@
         "nl": "Omgrenzende rechthoek van de bron",
         "sv": "Resursens avgränsningsruta"
       }
+    },
+    {
+      "field_name": "ows_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    },
+    {
+      "field_name": "ows_layer",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    },
+    {
+      "field_name": "wms_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    },
+    {
+      "field_name": "wfs_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
     }
   ]
 }

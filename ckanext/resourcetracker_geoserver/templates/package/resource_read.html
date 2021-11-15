@@ -4,11 +4,11 @@
 
 {% block resource_read_url %}
   {{ super() }}
-  {% set wfs = h.get_resourcetracker_geoserver_wfs(res) %}
+  {% set wfs = h.get_wfs_url(res) %}
   {% if wfs and h.is_url(wfs) %}
     <p class="muted ellipsis">{{ _('Example WFS request:') }} <a class="resource-url-analytics" href="{{ wfs }}" title="{{ wfs }}" target="_blank">{{ wfs }}</a></p>
   {% endif %}
-  {% set wms = h.get_resourcetracker_geoserver_wms(res) %}
+  {% set wms = h.get_wms_url(res) %}
   {% if wms and h.is_url(wms) %}
     <p class="muted ellipsis">{{ _('Example WMS request:') }} <a class="resource-url-analytics" href="{{ wms }}" title="{{ wms }}" target="_blank">{{ wms }}</a></p>
   {% endif %}
