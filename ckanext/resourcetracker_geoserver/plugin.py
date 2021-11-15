@@ -5,7 +5,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
 from domain import Configuration
-from helpers import get_resourcetracker_geoserver_wfs, get_resourcetracker_geoserver_wms, get_feature_type_name, get_resource_id_from_feature_type_name
+import helpers as h
 from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
 from worker.geoserver.rest.model import Workspace, DataStore
@@ -61,8 +61,8 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
 
     def get_helpers(self):
         return {
-            'get_resourcetracker_geoserver_wfs': get_resourcetracker_geoserver_wfs,
-            'get_resourcetracker_geoserver_wms': get_resourcetracker_geoserver_wms
+            'get_wms_url': h.get_wms_url,
+            'get_wfs_url': h.get_wfs_url
         }
 
     # IResourceController
@@ -95,17 +95,18 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
             else:
                 self._before_show(resource_dict, configuration)
         else:
-            # log.debug('Either Geoserver connection have not been configured or this resource is not datastore_active')
-            self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=False)
+            if not resource_dict.get('ows_url', None):
+                self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=False)
+
 
     def populate_geoserver_metadata(self, configuration, resource_dict, should_populate_geoserver_metadata=False):
         if should_populate_geoserver_metadata:
             ows_url = configuration.source_ckan_host
             ows_url += self.ows_path.format(workspace=configuration.workspace_name)
             resource_dict["ows_url"] = ows_url
-            resource_dict["ows_layer"] = get_feature_type_name(configuration, resource_dict)
-            resource_dict["wms_url"] = get_resourcetracker_geoserver_wms(resource_dict)
-            resource_dict["wfs_url"] = get_resourcetracker_geoserver_wfs(resource_dict)
+            resource_dict["ows_layer"] = h.get_feature_type_name(configuration, resource_dict)
+            resource_dict["wms_url"] = h.get_resourcetracker_geoserver_wms(resource_dict)
+            resource_dict["wfs_url"] = h.get_resourcetracker_geoserver_wfs(resource_dict)
         else:
             resource_dict["ows_url"] = None
             resource_dict["ows_layer"] = None
@@ -122,7 +123,7 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
         """
         workspace = Workspace(name=configuration.workspace_name)
         data_store = DataStore(name=configuration.data_store_name)
-        feature_type_name = get_feature_type_name(configuration, resource_dict)
+        feature_type_name = h.get_feature_type_name(configuration, resource_dict)
         feature_type = self.api.read_feature_type(workspace, data_store, feature_type_name)
         feature_type_exists = feature_type is not None
         self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=feature_type_exists)
@@ -190,7 +191,7 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
             'featuretypes')
         result = None
         if data is not None and "featureTypes" in data and "featureType" in data["featureTypes"]:
-            result = [get_resource_id_from_feature_type_name(configuration, feature_type["name"]) for feature_type in data["featureTypes"]["featureType"]]
+            result = [h.get_resource_id_from_feature_type_name(configuration, feature_type["name"]) for feature_type in data["featureTypes"]["featureType"]]
         Resourcetracker_GeoserverPlugin().local_cache = result
         Resourcetracker_GeoserverPlugin().local_cache_last_updated = datetime.datetime.now()
         Resourcetracker_GeoserverPlugin().local_cache_thread_active = False
