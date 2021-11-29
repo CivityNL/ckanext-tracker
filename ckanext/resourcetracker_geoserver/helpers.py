@@ -88,6 +88,6 @@ def get_resource_id_from_feature_type_name(configuration, feature_type_name):
     If a geoserver_layer_prefix is defined, it will strip of the prefix string.
     """
     geoserver_layer_prefix = configuration.geoserver_layer_prefix
-    resource_id = feature_type_name.lstrip(geoserver_layer_prefix)
+    resource_id = feature_type_name.split(geoserver_layer_prefix, 1)[-1]
     return resource_id
 
