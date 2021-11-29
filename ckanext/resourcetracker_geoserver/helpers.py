@@ -17,25 +17,27 @@ def get_wfs_url(res):
     return res.get('wfs_url', None)
 
 
-def get_resourcetracker_geoserver_wfs(res):
-    result = ''
+def get_resourcetracker_geoserver_wfs(workspace_name, res):
     url = res.get("ows_url")
+    layer = res.get("ows_layer")
     params_dict = {
         'service': 'WFS',
         'version': DEFAULT_WFS_VERSION,
         'request': 'GetFeature',
-        'typeName': res.get("ows_layer"),
+        'typeName': '{featurePrefix}:{featureType}'.format(
+            featurePrefix=workspace_name, featureType=layer
+            ),
         'maxFeatures': 50,
         'outputFormat': 'application/json'
     }
     params = urllib.urlencode(params_dict)
+    result = None
     if url is not None:
         result = url + params
     return result
 
 
 def get_resourcetracker_geoserver_wms(res):
-    result = ''
     url = res.get("ows_url")
     params_dict = {
         'service': 'WMS',
@@ -49,6 +51,7 @@ def get_resourcetracker_geoserver_wms(res):
         'format': 'image/png'
     }
     params = urllib.urlencode(params_dict)
+    result = None
     if url is not None:
         result = url + params
     return result

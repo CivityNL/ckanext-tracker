@@ -101,12 +101,13 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
 
     def populate_geoserver_metadata(self, configuration, resource_dict, should_populate_geoserver_metadata=False):
         if should_populate_geoserver_metadata:
+            workspace_name = configuration.workspace_name
             ows_url = configuration.source_ckan_host
-            ows_url += self.ows_path.format(workspace=configuration.workspace_name)
+            ows_url += self.ows_path.format(workspace=workspace_name)
             resource_dict["ows_url"] = ows_url
             resource_dict["ows_layer"] = h.get_feature_type_name(configuration, resource_dict)
             resource_dict["wms_url"] = h.get_resourcetracker_geoserver_wms(resource_dict)
-            resource_dict["wfs_url"] = h.get_resourcetracker_geoserver_wfs(resource_dict)
+            resource_dict["wfs_url"] = h.get_resourcetracker_geoserver_wfs(workspace_name, resource_dict)
         else:
             resource_dict["ows_url"] = None
             resource_dict["ows_layer"] = None
