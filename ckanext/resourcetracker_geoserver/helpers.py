@@ -91,3 +91,18 @@ def get_resource_id_from_feature_type_name(configuration, feature_type_name):
     resource_id = feature_type_name.split(geoserver_layer_prefix, 1)[-1]
     return resource_id
 
+def get_ows_url(configuration, resource_dict):
+    '''
+    Configure Geoserver URL to access Virtual Services filtered by layer. This will give access
+    to only the specific resource of the workspace, when accessing the service from a GIS software.
+    Alternatively, using structure:
+        '{source_ckan_host}/geoserver/{workspace}/ows?'
+    will give access to all the workspace's layers.
+    '''
+    ows_url = '{source_ckan_host}/geoserver/{workspace}/{prefix}{layer}/ows?'.format(
+        source_ckan_host=configuration.source_ckan_host,
+        workspace=configuration.workspace_name,
+        prefix=configuration.geoserver_layer_prefix,
+        layer=resource_dict['id']
+    )
+    return ows_url
