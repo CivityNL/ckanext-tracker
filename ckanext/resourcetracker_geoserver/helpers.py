@@ -28,7 +28,7 @@ def get_resourcetracker_geoserver_wfs(workspace_name, res):
             featurePrefix=workspace_name, featureType=layer
             ),
         'maxFeatures': 50,
-        'outputFormat': 'application/json'
+        'outputFormat': 'gml3'
     }
     params = urllib.urlencode(params_dict)
     result = None
