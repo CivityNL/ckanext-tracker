@@ -1,15 +1,13 @@
 {% ckan_extends %}
 
-{% set res = c.resource %}
-
 {% block resource_read_url %}
   {{ super() }}
-  {% set wfs = h.get_wfs_url(res) %}
+  {% set wfs = res.wfs_url %}
   {% if wfs and h.is_url(wfs) %}
-    <p class="muted ellipsis">{{ _('Example WFS request:') }} <a class="resource-url-analytics" href="{{ wfs }}" title="{{ wfs }}" target="_blank">{{ wfs }}</a></p>
+    <p class="muted ellipsis">{{ _('WFS endpoint:') }} <a class="resource-url-analytics" href="{{ wfs }}" title="{{ wfs }}" target="_blank">{{ wfs }}</a></p>
   {% endif %}
-  {% set wms = h.get_wms_url(res) %}
+  {% set wms = res.wms_url %}
   {% if wms and h.is_url(wms) %}
-    <p class="muted ellipsis">{{ _('Example WMS request:') }} <a class="resource-url-analytics" href="{{ wms }}" title="{{ wms }}" target="_blank">{{ wms }}</a></p>
+    <p class="muted ellipsis">{{ _('WMS endpoint:') }} <a class="resource-url-analytics" href="{{ wms }}" title="{{ wms }}" target="_blank">{{ wms }}</a></p>
   {% endif %}
 {% endblock %}

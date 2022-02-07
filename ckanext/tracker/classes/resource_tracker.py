@@ -15,7 +15,6 @@ class ResourceTrackerPlugin(BaseTrackerPlugin):
     "after_create", "after_update", and "before_delete"
     """
     plugins.implements(plugins.IResourceController, inherit=True)
-
     # IResourceController
 
     def after_create(self, context, resource):

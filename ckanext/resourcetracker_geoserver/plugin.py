@@ -1,68 +1,44 @@
-import datetime
-import logging
-import threading
-import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
-from domain import Configuration
 import helpers as h
+import ckanext.tracker.classes.helpers as tracker_helpers
 from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
-from worker.geoserver.rest.model import Workspace, DataStore
-
+from worker.geoserver.rest.model import Workspace, DataStore, FeatureType
+import ckan.plugins as plugins
+import json
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
 class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
-    """No idea what the use is of this Tracker. If you know please add it here"""
-
-    plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(plugins.IConfigurable)
+    """
+    - Handles resource triggers when GeoServer link is enabled.
+    - Triggers Geoserver-Worker when conditions are met.
+    """
     plugins.implements(plugins.IConfigurer)
-
     queue_name = 'geoserver'
     worker = GeoServerWorkerWrapper()
     geoserver_link_field_name = 'geoserver_link_enabled'
-
     api = None
+    workspace = None
+    data_store = None
+    GEOSERVER_METADATA_LIST = ['name', 'description', 'layer_extent', 'layer_srid']
 
-    local_cache_active = False
-    local_cache_refresh_rate = 300
-    local_cache = None
-    local_cache_last_updated = None
-    local_cache_thread_active = None
-
-    DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
     # IConfigurable
     def configure(self, config):
         super(Resourcetracker_GeoserverPlugin, self).configure(config)
         geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(self.name), None)
-        self.local_cache_active = toolkit.config.get('ckanext.{}.geoserver.local_cache_active'.format(self.name), True)
         configuration = self.get_configuration()
         if geoserver_url is not None:
             self.api = GeoServerRestApi(configuration)
-            if self.api is not None and self.local_cache_active is True:
-                log.debug("starting thread to update local cache")
-                self.local_cache_thread_active = True
-                threading.Thread(target=self.update_local_cache, args=(configuration, self.api, self.name,)).start()
-        else:
-            self.local_cache_active = False
-            log.debug("No URL for geoserver given. Will ignore all geoserver related checks")
-
-    # IConfigurer
+            self.workspace = Workspace(name=configuration.workspace_name)
+            self.data_store = DataStore(name=configuration.data_store_name)
 
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
-
-    # ITemplateHelpers
-
-    def get_helpers(self):
-        return {
-            'get_wms_url': h.get_wms_url,
-            'get_wfs_url': h.get_wfs_url
-        }
 
     # IResourceController
     def after_create(self, context, resource):
@@ -70,134 +46,74 @@ class Resourcetracker_GeoserverPlugin(ResourceTrackerPlugin):
 
     def after_update(self, context, resource):
         # get package_info to check link
-        pkg_dict = toolkit.get_action("package_show")(context,{"id": resource["package_id"]})
-        if self.geoserver_link_field_name in pkg_dict and \
-                pkg_dict[self.geoserver_link_field_name] == 'True' and \
-                resource.get('layer_srid', False):
-            log.info('Linking to Geoserver')
-            # TODO harmonize before sending to worker
+        configuration = self.get_configuration()
+        package = toolkit.get_action("package_show")(context, {"id": resource["package_id"]})
+        if self.should_publish_to_geoserver(configuration, package, resource):
             self.put_resource_on_a_queue(context, resource, self.get_worker().create_datasource)
 
-    def before_show(self, resource_dict):
-        """
-        see: https://docs.ckan.org/en/2.8/extensions/plugin-interfaces.html#ckan.plugins.interfaces.IResourceController.before_show
-        The resource_dict is the dictionary as it would be returned as either a resource_show, a
-        pacakge_show or any other api endpoint that would return resource information
-        :param resource_dict:
-        :return:
-        """
-        configuration = self.get_configuration()
-        # only do something if the resource is datastore_active and we have a geoserver api configured
-        if resource_dict['datastore_active'] is True and self.api is not None:
-            if self.local_cache_active is True:
-                self._before_show_using_local_cache(resource_dict, configuration)
+    def should_publish_to_geoserver(self, configuration, package, resource):
+        '''
+        multiple criteria to be met in order to publish to geoserver:
+            1. geoserver_link enabled in package metadata
+            2. layer_srid populated in resource metadata
+            3. GeoServer FeatureType to not exist
+            or FeatureType to exist and geoserver-related metadata to be changed
+        '''
+        if not tracker_helpers.geoserver_link_is_enabled(package):
+            return False
+        if not ('layer_srid' in resource and resource.get('layer_srid')):
+            return False
+        if not ('layer_extent' in resource and resource.get('layer_extent')):
+            return False
+        if resource.get('format').lower in ['wms', 'wfs']:
+            return False
+        geoserver_feature_type = self.get_geoserver_feature_type(configuration, resource)
+        if not geoserver_feature_type:
+            # Case layer does not exist(first iteration) -> create geoserver feature_type
+            return True
+        else:
+            if not self.metadata_equals(key_list=self.GEOSERVER_METADATA_LIST,
+                                        metadata_origin=resource,
+                                        metadata_remote=geoserver_feature_type):
+                # Case layer exists but 'GEOSERVER_METADATA_LIST' metadata changed -> update geoserver feature_type
+                return True
+            return False
+
+    def get_geoserver_feature_type(self, configuration, resource_dict):
+        '''
+        Geoserver RestAPI call to check if feature exists in Geoserver environment
+        '''
+        feature_type_name = h.get_geoserver_feature_type_name(configuration, resource_dict)
+        feature_type = self.api.read_feature_type(self.workspace, self.data_store, feature_type_name)
+        if feature_type:
+            return FeatureType.to_dict(feature_type)
+
+    def metadata_equals(self, key_list, metadata_origin, metadata_remote):
+        '''
+        Customized for Geoserver metadata comparison
+        '''
+        for key in key_list:
+            if key == 'layer_extent':
+                origin_layer_extent_dict = json.loads(metadata_origin.get(key))
+                remote_layer_extent_dict = json.loads(metadata_remote.get(key))
+                if not self.layer_extend_is_equal(origin_layer_extent_dict, remote_layer_extent_dict):
+                    return False
             else:
-                self._before_show(resource_dict, configuration)
-        else:
-            if not resource_dict.get('ows_url', None):
-                self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=False)
-
-
-    def populate_geoserver_metadata(self, configuration, resource_dict, should_populate_geoserver_metadata=False):
-        if should_populate_geoserver_metadata:
-            resource_dict["ows_url"] = h.get_ows_url(configuration, resource_dict)
-            resource_dict["ows_layer"] = h.get_feature_type_name(configuration, resource_dict)
-            resource_dict["wms_url"] = h.get_resourcetracker_geoserver_wms(resource_dict)
-            resource_dict["wfs_url"] = h.get_resourcetracker_geoserver_wfs(configuration.workspace_name, resource_dict)
-        else:
-            resource_dict["ows_url"] = None
-            resource_dict["ows_layer"] = None
-            resource_dict["wms_url"] = None
-            resource_dict["wfs_url"] = None
-
-    def _before_show(self, resource_dict, configuration):
-        """
-        This is a simplified implementation of the original before_show which skips a couple of checks in order to make
-        this method run quicker. It will check directly if the feature type exists, regardless if the workspace or data
-        store actually exist
-        @param resource_dict: dictionary containing the information about the resource
-        @param configuration: Configuration object
-        """
-        workspace = Workspace(name=configuration.workspace_name)
-        data_store = DataStore(name=configuration.data_store_name)
-        feature_type_name = h.get_feature_type_name(configuration, resource_dict)
-        feature_type = self.api.read_feature_type(workspace, data_store, feature_type_name)
-        feature_type_exists = feature_type is not None
-        self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=feature_type_exists)
-
-
-    def _before_show_using_local_cache(self, resource_dict, configuration):
-        # type: (dict, Configuration) -> None
-        """
-        This implementation of the before_show uses a local cache of featureType id's to check if it exists
-        @param resource_dict: dictionary containing the information about the resource
-        @param configuration: Configuration object
-        """
-        if self.should_update_local_cache(resource_dict):
-            log.debug("starting thread to update local cache")
-            self.local_cache_thread_active = True
-            threading.Thread(target=self.update_local_cache, args=(configuration, self.api, self.name,)).start()
-        feature_type_exists_in_local_cache = self.local_cache is not None and resource_dict['id'] in self.local_cache
-        self.populate_geoserver_metadata(configuration, resource_dict, should_populate_geoserver_metadata=feature_type_exists_in_local_cache)
-
-
-    def should_update_local_cache(self, resource_dict=None):
-        """
-        This method does a couple of checks which might include the resource_dict if given and decides if the
-        local_cache should be update, which it returns as a boolean. These checks are
-        - if local_cache_active is False or api is None return False
-        - if local_cache_last_updated is None (meaning it has never been run before) return True
-        - if the time between the last update and now is more the refreshrate (if given) return True
-        - if local_cache_last_updated is older then the last_modified or created datetime of the resource_dict (if
-            given and a correct date could be extracted) return True
-        @rtype: bool
-        @param resource_dict: dictionary containing the information about the resource (optional)
-        @return: either True or False depending if the local_cache should be updated
-        """
-        result = False
-        if self.local_cache_active is False or self.api is None:
-            result = False
-        elif self.local_cache_thread_active is True:
-            result = False
-        elif self.local_cache_last_updated is None:
-            result = True
-        elif self.local_cache_refresh_rate is not None and (datetime.datetime.now() - self.local_cache_last_updated).total_seconds() > self.local_cache_refresh_rate:
-            result = True
-        elif resource_dict is not None:
-            date_string = resource_dict.get('last_modified', None)
-            date = None
-            if date_string is None:
-                date_string = resource_dict.get('created', None)
-            if date_string is not None:
-                date = datetime.datetime.strptime(date_string, self.DATE_TIME_FORMAT)
-            if date is not None and self.local_cache_last_updated < date:
-                result = True
-        return result
+                if metadata_origin.get(key, None) != metadata_remote.get(key, None):
+                    return False
+        return True
 
     @staticmethod
-    def update_local_cache(configuration, api, name):
-        # type: (Configuration) -> None
-        """
-        This method will fetch the names (which are equal to the resource id's) from all the feature_types belonging to
-        the workspace and data_store from the configuration and will update the local_cache_last_updated
-        @param configuration: Configuration object
-        @rtype: None
-        """
-        data = api.get(
-            'rest/workspaces/' + configuration.workspace_name + '/datastores/' + configuration.data_store_name,
-            'featuretypes')
-        result = None
-        if data is not None and "featureTypes" in data and "featureType" in data["featureTypes"]:
-            result = [h.get_resource_id_from_feature_type_name(configuration, feature_type["name"]) for feature_type in data["featureTypes"]["featureType"]]
-        Resourcetracker_GeoserverPlugin().local_cache = result
-        Resourcetracker_GeoserverPlugin().local_cache_last_updated = datetime.datetime.now()
-        Resourcetracker_GeoserverPlugin().local_cache_thread_active = False
-        log.debug("finished thread to update local cache")
-        if Resourcetracker_GeoserverPlugin().local_cache is None:
-            geoserver_url = toolkit.config.get('ckanext.{}.geoserver.url'.format(name), None)
-            log.debug("Something went wrong fetching the current feature types from geoserver @ {geoserver_url} "
-                      "using workspace {workspace} and data_store {data_store}!"
-                      .format(geoserver_url=geoserver_url,
-                              workspace=configuration.workspace_name,
-                              data_store=configuration.data_store_name))
+    def layer_extend_is_equal(origin_layer_extent_dict, remote_layer_extent_dict):
+        '''
+        Function to compare layer extend while overriding the
+        decimal precision difference between ogr-side and geoserver-side coordinates.
+        '''
+        if len(origin_layer_extent_dict) == len(remote_layer_extent_dict) == 4:
+            for index, coord in enumerate(origin_layer_extent_dict):
+                origin_rounded_coord = '{:.10f}'.format(origin_layer_extent_dict[index])
+                remote_rounded_coord = '{:.10f}'.format(remote_layer_extent_dict[index])
+                if origin_rounded_coord != remote_rounded_coord:
+                    return False
+            return True
 

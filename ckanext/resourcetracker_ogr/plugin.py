@@ -35,7 +35,6 @@ class Resourcetracker_OgrPlugin(ResourceTrackerPlugin):
     # IResourceUrlChange
     def notify(self, entity, operation=None):
         if isinstance(entity, model.Resource):
-            log.debug('[notify] entity.url_type = {} '.format(entity.url_type))
             if entity.url_type in ('datapusher', 'xloader', 'datastore'):
                 log.debug('Skipping putting the resource {r.id} through OGR because '
                           'url_type "{r.url_type}" means resource.url '

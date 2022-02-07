@@ -38,5 +38,19 @@
       "default_value":"False",
       "required": true
     }
-  ]
+  ],
+  "resource_fields": [
+    {
+      "field_name": "wms_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    },
+    {
+      "field_name": "wfs_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    }
+    ]
 }

@@ -94,6 +94,10 @@ def get_configuration_dict(name):
             'ckanext.{}.geoserver.layer_prefix'.format(name),
             None
         ),
+        "geoserver_resource_metadata": toolkit.config.get(
+            'ckanext.{}.geoserver.resource_metadata'.format(name),
+            None
+        ),
         "ogr2ogr_command": toolkit.config.get(
             'ckanext.{}.command.ogr2ogr'.format(name),
             "ogr2ogr"
@@ -217,7 +221,7 @@ def package_get_changed_fields_after_update(pkg_dict):
 
     PackageExtraRevision2 = aliased(model.PackageExtraRevision)
 
-    test = model.Session.query(
+    pkg_extra = model.Session.query(
             model.PackageExtraRevision.package_id,
             model.PackageExtraRevision.key,
             model.PackageExtraRevision.value,
@@ -232,7 +236,7 @@ def package_get_changed_fields_after_update(pkg_dict):
         filter(PackageExtraRevision2.revision_timestamp.isnot(None)).\
         all()
 
-    for package_id, key, new_value, old_value in test:
+    for package_id, key, new_value, old_value in pkg_extra:
         pkg_changes_dict[key] = {"old": old_value, "new": new_value}
 
     new_package = model.Session.query(model.PackageRevision). \
@@ -244,8 +248,9 @@ def package_get_changed_fields_after_update(pkg_dict):
         filter(model.PackageRevision.id == package_id).\
         filter(model.PackageRevision.expired_timestamp > now()). \
         filter(model.PackageRevision.revision_timestamp.isnot(None)). \
-        one_or_none()
-
+        first()
+    if not old_package:
+        return
     if new_package is not None:
         fields = model.Package.revisioned_fields()
         for field in fields:
@@ -329,3 +334,35 @@ def upsert_task(context, name, entity_type, data, job):
 # This should return the correct entity_id (being package_id, resource_id, whatever). Should be implemented
 def get_entity_id(context, data):
     return data['id']
+
+
+def donl_link_is_enabled(pkg_dict):
+    donl_link_field_name = 'donl_link_enabled'
+    return donl_link_field_name in pkg_dict and pkg_dict[donl_link_field_name] == 'True'
+
+
+def geonetwork_link_is_enabled(pkg_dict):
+    geonetwork_link_field_name = 'geonetwork_link_enabled'
+    return geonetwork_link_field_name in pkg_dict and pkg_dict[geonetwork_link_field_name] == 'True'
+
+
+def geoserver_link_is_enabled(pkg_dict):
+    geoserver_link_field_name = 'geoserver_link_enabled'
+    return geoserver_link_field_name in pkg_dict and pkg_dict[geoserver_link_field_name] == 'True'
+
+
+def should_link_to_donl(pkg_dict):
+    return donl_link_is_enabled(pkg_dict) and not geonetwork_link_is_enabled(pkg_dict)
+
+def resource_has_geoserver_metadata_populated(configuration, resource):
+    '''
+    Check that all the geoserver related metadata exist and have values
+    '''
+    geoserver_resource_metadata_dict = [metadata.strip() for metadata in
+                                        configuration.geoserver_resource_metadata.split(',')]
+    for field in geoserver_resource_metadata_dict:
+        if not field in resource.keys():
+            return False
+        if field in resource.keys() and not resource[field]:
+            return False
+    return True
