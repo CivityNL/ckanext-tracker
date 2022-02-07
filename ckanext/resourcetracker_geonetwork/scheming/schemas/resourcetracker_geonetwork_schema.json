@@ -37,5 +37,13 @@
       "default_value":"False",
       "required": true
     }
+  ],
+  "resource_fields": [
+    {
+      "field_name": "geonetwork_url",
+      "display_snippet": null,
+      "form_snippet": "text.html",
+      "classes": ["hidden"]
+    }
   ]
 }

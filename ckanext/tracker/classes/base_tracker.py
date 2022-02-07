@@ -278,3 +278,9 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         )
         if not show_badge or self.get_badge_title() is None:
             return False
+
+    def metadata_equals(self, key_list, metadata_origin, metadata_remote):
+        '''
+        NotImplemented
+        '''
+        return False

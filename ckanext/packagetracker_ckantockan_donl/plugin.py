@@ -6,6 +6,7 @@ from ckanext.tracker.classes.base_tracker import TrackerPluginException
 from helpers import is_action_done_by_worker, is_private
 from mapper.oneckan.mapper_oneckan import MapperOneCkan
 from worker.ckan_to_ckan.donl import CkanToCkanDONLWorkerWrapper
+import ckanext.tracker.classes.helpers as tracker_helpers
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
             log.debug("No package_id could be found, so nothing to do")
             raise SkipEnqueueException
 
-        if not self.should_link_to_donl(data) and action not in ('delete_package', 'purge_package'):
+        if not tracker_helpers.should_link_to_donl(data) and action not in ('delete_package', 'purge_package'):
             log.debug('Skipping DONL Link because it SHOULD NOT do it')
             raise SkipEnqueueException
 
@@ -71,21 +72,6 @@ class Packagetracker_Ckantockan_DonlPlugin(packagetracker_ckantockan.Packagetrac
         else:
             pass
 
-    def should_link_to_donl(self, pkg_dict):
-        return self.donl_link_is_enabled(pkg_dict) and not self.geonetwork_link_is_enabled(pkg_dict)
-
-    def donl_link_is_enabled(self, pkg_dict):
-        donl_link_field_name = 'donl_link_enabled'
-        return donl_link_field_name in pkg_dict and pkg_dict[donl_link_field_name] == 'True'
-
-    def geonetwork_link_is_enabled(self, pkg_dict):
-        geonetwork_link_field_name = 'geonetwork_link_enabled'
-        return geonetwork_link_field_name in pkg_dict and pkg_dict[geonetwork_link_field_name] == 'True' and self.geoserver_link_is_enabled(pkg_dict)
-
-    def geoserver_link_is_enabled(self, pkg_dict):
-        geoserver_link_field_name = 'geoserver_link_enabled'
-        return geoserver_link_field_name in pkg_dict and pkg_dict[geoserver_link_field_name] == 'True'
-
     def show_badge_for_package_type(self, context, package_dict):
         is_private = 'state' in package_dict and package_dict["state"] == 'draft'
-        return self.should_link_to_donl(package_dict) and not is_private
+        return tracker_helpers.should_link_to_donl(package_dict) and not is_private

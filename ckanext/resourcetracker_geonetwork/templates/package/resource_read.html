@@ -4,6 +4,6 @@
   {{ super() }}
   {% set geonetwork = res.geonetwork_url %}
   {% if geonetwork and h.is_url(geonetwork) %}
-    <p class="muted ellipsis">{{ _('GeoNetwork:') }} <a class="resource-url-analytics" href="{{ geonetwork }}" title="{{ geonetwork }}" target="_blank">{{ geonetwork }}</a></p>
+    <p class="muted ellipsis">{{ _('NGR endpoint:') }} <a class="resource-url-analytics" href="{{ geonetwork }}" title="{{ geonetwork }}" target="_blank">{{ geonetwork }}</a></p>
   {% endif %}
 {% endblock %}

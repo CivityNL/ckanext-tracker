@@ -1,17 +1,18 @@
 import datetime
-import logging
 import re
 import urlparse
 import threading
-import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckan.model import Package, GroupExtra
 from ckanext.tracker.classes.resource_tracker import ResourceTrackerPlugin
 from domain import Organization
+import ckanext.tracker.classes.helpers as tracker_helpers
 from worker.geonetwork import GeoNetworkWorkerWrapper
 from worker.geonetwork.rest import GeoNetworkRestApi
-
+from ckan.plugins.toolkit import get_action
+import ckan.plugins as plugins
+import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
@@ -24,13 +25,10 @@ class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
     This will then get all the identifiers from the source every 'local_cache_refresh_rate' seconds, except if the
     requested resource has been updated since the last refresh
     """
-
-    plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IConfigurer)
-
-    queue_name = 'geoserver'
+    queue_name = 'geonetwork'
     worker = GeoNetworkWorkerWrapper()
-
+    GEONETWORK_METADATA_LIST = []
     local_cache_active = False
     local_cache_refresh_rate = 300
     local_cache = {}
@@ -53,20 +51,26 @@ class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
         toolkit.add_template_directory(config_, 'templates')
 
     def after_create(self, context, resource):
-        # Do not put a task on the geonetwork queue in case of a create. This
-        # should be handled by geoserver worker. 
         pass
 
     def after_update(self, context, resource):
-        # Do not put a task on the geonetwork queue in case of a update. This
-        # should be handled by geoserver worker. 
-        pass
+        """
+        monitor criteria to publish to or unpublish from NGR
+        """
+        package = get_action('package_show')(context, {'id': resource.get('package_id')})
+        if self.should_publish_to_geonetwork(package, resource):
+            self.put_resource_on_a_queue(context, resource, self.get_worker().create_datasource)
+        else:
+            if self.should_unpublish_from_geonetwork(package, resource):
+                self.put_resource_on_a_queue(context, resource, self.get_worker().delete_datasource)
 
     def before_delete(self, context, resource, resources):
-        # Do not put a task on the geonetwork queue in case of a delete. This
-        # should be handled by geoserver worker. But it doesn't work in case
-        # of NGR. 
-        pass
+        '''
+        Important for geonetwork worker to provide the full resource metadata.
+        Current resource arg returns only {'id': <resource_id>}
+        '''
+        full_resource_dict = get_action('resource_show')(context, {'id': resource.get('id')})
+        self.put_resource_on_a_queue(context, full_resource_dict, self.get_worker().delete_datasource)
 
     def before_show(self, resource_dict):
         """
@@ -81,7 +85,7 @@ class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
             try:
                 owner_org_id = model.Session.query(Package.owner_org).filter(Package.id == resource_dict['package_id']).one()
                 group_extra = model.Session.query(GroupExtra.key, GroupExtra.value).filter(GroupExtra.group_id == owner_org_id).all()
-                organization_dict = { 'id': owner_org_id }
+                organization_dict = {'id': owner_org_id}
                 for group_extra in group_extra:
                     organization_dict[group_extra.key] = group_extra.value
                 organization = Organization.from_dict(organization_dict)
@@ -178,3 +182,24 @@ class Resourcetracker_GeonetworkPlugin(ResourceTrackerPlugin):
             nextRecordSearch = Resourcetracker_GeonetworkPlugin.REGEX_NEXT_RECORD.search(data)
             nextRecord = int(nextRecordSearch.group(0))
         return records, nextRecord
+
+    def should_publish_to_geonetwork(self, package, resource):
+        '''
+        multiple criteria to be met in order to publish to geoserver
+        '''
+        configuration = self.get_configuration()
+        if not tracker_helpers.geonetwork_link_is_enabled(package):
+            return False
+        if not tracker_helpers.resource_has_geoserver_metadata_populated(configuration, resource):
+            return False
+        if self.metadata_equals(key_list=self.GEONETWORK_METADATA_LIST, metadata_origin=resource, metadata_remote=None):
+            return False
+        return True
+
+    def should_unpublish_from_geonetwork(self, package, resource):
+        configuration = self.get_configuration()
+        if not tracker_helpers.geonetwork_link_is_enabled(package):
+            return False
+        if tracker_helpers.resource_has_geoserver_metadata_populated(configuration, resource):
+            return False
+        return True

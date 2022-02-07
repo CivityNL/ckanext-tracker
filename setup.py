@@ -87,6 +87,8 @@ setup(
         packagetracker_ckantockan_donl=ckanext.packagetracker_ckantockan_donl.plugin:Packagetracker_Ckantockan_DonlPlugin
         packagetracker_ckantockan_oneckan=ckanext.packagetracker_ckantockan_oneckan.plugin:Packagetracker_Ckantockan_OneCkanPlugin
         packagetracker_ckantockan_oneckan_rotterdam=ckanext.packagetracker_ckantockan_oneckan_rotterdam.plugin:Packagetracker_Ckantockan_OneCkan_RotterdamPlugin
+        packagetracker_geoserver=ckanext.packagetracker_geoserver.plugin:Packagetracker_GeoserverPlugin
+        packagetracker_geonetwork=ckanext.packagetracker_geonetwork.plugin:Packagetracker_GeonetworkPlugin
         packagetracker_ogr=ckanext.packagetracker_ogr.plugin:Packagetracker_OgrPlugin
         resourcetracker_ckantockan=ckanext.resourcetracker_ckantockan.plugin:Resourcetracker_CkantockanPlugin
         resourcetracker_ckantockan_donl=ckanext.resourcetracker_ckantockan_donl.plugin:Resourcetracker_Ckantockan_DonlPlugins
