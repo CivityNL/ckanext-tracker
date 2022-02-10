@@ -90,6 +90,10 @@ def get_configuration_dict(name):
             'ckanext.{}.contact.url'.format(name),
             "https://civity.nl"
         ),
+        "geonetwork_default_license_url": toolkit.config.get(
+            'ckanext.{}.geonetwork.default_license_url'.format(name),
+            None
+        ),
         "geoserver_layer_prefix": toolkit.config.get(
             'ckanext.{}.geoserver.layer_prefix'.format(name),
             None
