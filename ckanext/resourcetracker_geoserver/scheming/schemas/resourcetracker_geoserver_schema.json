@@ -41,6 +41,20 @@
   ],
   "resource_fields": [
     {
+      "field_name": "timestamp_identifier",
+      "label": {
+        "en": "Time series column",
+        "nl": "Time series kolom",
+        "sv": "Time series kolumn"
+      },
+      "help_text": {
+        "en": "Populate with the column name containing timestamps, to enable time series filtering functionality on the map viewer",
+        "nl": "Vul de kolomnaam in van de timestamp kolom, om de time series functionaliteit in de kaart te activeren",
+        "sv": "Fyll i kolumnnamnet som innehåller tidsstämplar för att aktivera tidsseriefiltreringsfunktioner i kartvisaren"
+      },
+      "form_snippet": "text.html"
+    },
+    {
       "field_name": "wms_url",
       "display_snippet": null,
       "form_snippet": "text.html",
