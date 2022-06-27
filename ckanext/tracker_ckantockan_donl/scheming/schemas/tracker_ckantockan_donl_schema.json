@@ -1,0 +1,42 @@
+{
+  "scheming_version": 1,
+  "dataset_type": "all",
+  "dataset_fields": [
+    {
+      "field_name": "donl_link_enabled",
+      "harmonized_field_name": "donl_link_enabled",
+      "preset": "select",
+      "choices": [
+        {
+          "value": "False",
+          "label": {
+            "en": "False",
+            "nl": "Nee",
+            "sv": "Nej"
+          }
+        },
+        {
+          "value": "True",
+          "label": {
+            "en": "True",
+            "nl": "Ja",
+            "sv": "Ja"
+          }
+        }
+      ],
+      "label": {
+        "en": "Link to DONL",
+        "nl": "Publiceren DONL (niet via NGR)",
+        "sv": "Länk till DONL"
+      },
+      "help_inline": true,
+      "help_text": {
+        "en": "This will be ignored if the geonetwork option is enabled. NGR will publish to DONL",
+        "nl": "Deze optie wordt genegeerd als de optie geonetwerk is ingeschakeld. NGR zal publiceren naar DONL",
+        "sv": "Detta ignoreras om alternativet för geonetwork är aktiverat. NGR publicerar till DONL"
+      },
+      "default_value":"False",
+      "required": true
+    }
+  ]
+}

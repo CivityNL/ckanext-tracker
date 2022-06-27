@@ -1,0 +1,12 @@
+{% extends "package/resource_edit_base.html" %}
+
+{% block primary_content_inner %}
+  {% set action = h.url_for(controller='ckanext.tracker_ogr.controllers:ResourceDataController', action='resource_data', id=pkg.name, resource_id=res.id) %}
+  {% set show_table = true %}
+
+  <form method="post" action="{{ action }}" class="datapusher-form">
+    <button class="btn btn-primary" name="save" type="submit">
+      <i class="fa fa-cloud-upload"></i> {{ _('Upload to DataStore') }}
+    </button>
+  </form>
+{% endblock %}

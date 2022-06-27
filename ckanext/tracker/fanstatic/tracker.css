@@ -1,0 +1,19 @@
+td.created {
+    background-color: #f2f2f2;
+}
+
+td.pending {
+    background-color: #9f9f9f;
+}
+
+td.running {
+    background-color: #3BC7ED;
+}
+
+td.complete {
+    background-color: #97CA00;
+}
+
+td.error {
+    background-color: #E05D44;
+}

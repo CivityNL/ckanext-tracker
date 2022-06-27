@@ -81,22 +81,15 @@ setup(
     entry_points='''
         [ckan.plugins]
 
-        datastoretracker_geoserver=ckanext.datastoretracker_geoserver.plugin:Datastoretracker_GeoserverPlugin
-        datastoretracker_xlstocsv=ckanext.datastoretracker_xlstocsv.plugin:Datastoretracker_XlsToCsvPlugin
-        packagetracker_ckantockan=ckanext.packagetracker_ckantockan.plugin:Packagetracker_CkantockanPlugin
-        packagetracker_ckantockan_donl=ckanext.packagetracker_ckantockan_donl.plugin:Packagetracker_Ckantockan_DonlPlugin
-        packagetracker_ckantockan_oneckan=ckanext.packagetracker_ckantockan_oneckan.plugin:Packagetracker_Ckantockan_OneCkanPlugin
-        packagetracker_ckantockan_oneckan_rotterdam=ckanext.packagetracker_ckantockan_oneckan_rotterdam.plugin:Packagetracker_Ckantockan_OneCkan_RotterdamPlugin
-        packagetracker_geoserver=ckanext.packagetracker_geoserver.plugin:Packagetracker_GeoserverPlugin
-        packagetracker_geonetwork=ckanext.packagetracker_geonetwork.plugin:Packagetracker_GeonetworkPlugin
-        packagetracker_ogr=ckanext.packagetracker_ogr.plugin:Packagetracker_OgrPlugin
-        resourcetracker_ckantockan=ckanext.resourcetracker_ckantockan.plugin:Resourcetracker_CkantockanPlugin
-        resourcetracker_ckantockan_donl=ckanext.resourcetracker_ckantockan_donl.plugin:Resourcetracker_Ckantockan_DonlPlugins
-        resourcetracker_ckantockan_oneckan=ckanext.resourcetracker_ckantockan_oneckan.plugin:Resourcetracker_Ckantockan_OneCkanPlugin
-        resourcetracker_geonetwork=ckanext.resourcetracker_geonetwork.plugin:Resourcetracker_GeonetworkPlugin
-        resourcetracker_geoserver=ckanext.resourcetracker_geoserver.plugin:Resourcetracker_GeoserverPlugin
-        resourcetracker_ogr=ckanext.resourcetracker_ogr.plugin:Resourcetracker_OgrPlugin
         tracker=ckanext.tracker.plugin:TrackerPlugin
+        tracker_ckantockan=ckanext.tracker_ckantockan.plugin:CkanToCkanTrackerPlugin
+        tracker_ckantockan_donl=ckanext.tracker_ckantockan_donl.plugin:CkanToCkanDonlTrackerPlugin
+        tracker_ckantockan_oneckan=ckanext.tracker_ckantockan_oneckan.plugin:CkanToCkanOneCkanTrackerPlugin
+        tracker_ckantockan_oneckan_rotterdam=ckanext.tracker_ckantockan_oneckan_rotterdam.plugin:CkanToCkanOneCkanRotterdamTrackerPlugin
+        tracker_ckantockan_oneckan_lidingo=ckanext.tracker_ckantockan_oneckan_lidingo.plugin:CkanToCkanOneCkanLidingoTrackerPlugin
+        tracker_geonetwork=ckanext.tracker_geonetwork.plugin:GeonetworkTrackerPlugin
+        tracker_geoserver=ckanext.tracker_geoserver.plugin:GeoserverTrackerPlugin
+        tracker_ogr=ckanext.tracker_ogr.plugin:OgrTrackerPlugin
         
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

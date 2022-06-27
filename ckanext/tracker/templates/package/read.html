@@ -3,7 +3,9 @@
 {% block page_heading %}
     {{ super() }}
     <br/>
-    {% for badge in h.get_tracker_badges('package', pkg.id) %}
-        {{ badge | safe }}
+    {% for name, badges in h.get_tracker_badges('package', pkg.id).items() %}
+        {% for badge in badges %}
+            {{ badge | safe }}
+        {% endfor %}
     {% endfor %}
 {% endblock %}

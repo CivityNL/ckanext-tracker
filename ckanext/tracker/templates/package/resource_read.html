@@ -2,8 +2,9 @@
 
 {% block resource_read_title %}
     {{ super() }}
-{# Commented out until Rotterdam approves the UI element (needs translation and handling on not showing for cases that dont link) #}
-    {% for badge in h.get_tracker_badges(['resource','datastore'], res.id) %}
-        {{ badge | safe }}
+    {% for name, badges in h.get_tracker_badges('resource', res.id).items() %}
+        {% for badge in badges %}
+            {{ badge | safe }}
+        {% endfor %}
     {% endfor %}
 {% endblock %}

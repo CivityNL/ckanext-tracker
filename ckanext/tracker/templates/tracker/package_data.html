@@ -5,18 +5,19 @@
     controller='ckanext.tracker.controllers:TrackerController',
     action='package_data', id=pkg.id) %}
 
-    <form method="post" action="{{ action }}" >
-    {% for status in h.get_tracker_statuses('package', pkg.id) %}
-
-        {% snippet 'tracker/snippets/job_details.html', job=status %}
-        <form method="post" action="{{ action }}" >
-            <input type="hidden" id="name" name="name" value="{{ status.key }}">
-            <input type="hidden" id="type" name="type" value="{{ status.entity_type }}">
-            <button class="btn btn-primary" type="submit">
-                <i class="fa fa-book"></i> {{ _('Upsert') }}
-            </button>
-        </form>
+    {% set statusses = h.get_tracker_statuses('package', pkg.id) %}
+    {% for tracker in h.get_trackers() %}
+        <h3 class="heading">{{ _('Details') }} {{ tracker.name }}</h3>
+        {% if tracker.name in statusses %}
+            <h4 class="heading">{{ _('Recent Jobs or Active Jobs') }}</h4>
+            {% snippet 'tracker/snippets/job_overview.html', statuses=statusses[tracker.name], action=action %}
+        {% else %}
+            {{ fsgdfgsdgf }}
+        {% endif %}
     {% endfor %}
-    </form>
+
+    {% set headers, rows = h.get_tracker_activities_stream('package', pkg.id) %}
+    <h3 class="heading">{{ _('Timeline') }}</h3>
+    {% snippet 'tracker/snippets/job_stream.html', headers=headers, rows=rows %}
 
 {% endblock %}
