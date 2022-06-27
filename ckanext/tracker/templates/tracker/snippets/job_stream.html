@@ -1,0 +1,42 @@
+{% set n_col = headers | sum(attribute='size') %}
+<table class="table table-condensed">
+      <col width="35">
+      {% for header in headers %}
+          {% for i in range(header.size) %}
+          <col width="{{ 65/n_col }}">
+          {% endfor %}
+      {% endfor %}
+    <tr>
+        <th>Timestamp</th>
+      {% for header in headers %}
+          <th colspan="{{header.size}}">{{ header.name }}</th>
+      {% endfor %}
+    </tr>
+{% for row in rows %}
+    {% if row.diff is not none and row.diff > 0 %}
+        <tr style="height: {{ 10*row.diff }}px">
+            <td></td>
+            {% for activity in row.activities %}
+                <td
+                    class="{% if activity is not none and not activity.end%}{{activity.state}}{% endif %}"
+                ></td>
+            {% endfor %}
+        </tr>
+    {% endif %}
+    <tr>
+        <td><span>{{ row.timestamp }}</span></td>
+        {% for activity in row.activities %}
+            <td
+                class="
+                {% if activity is not none %}{{activity.state}}{% endif %}
+                {% if activity is not none and activity.start %} start{% endif %}
+                {% if activity is not none and activity.end %} end{% endif %}
+                "
+                style="text-align: center"
+                {% if activity is not none and activity.start %}title="{{activity.id}} ({{activity.action}})"{% endif %}
+
+            >{% if activity is not none and activity.start %}{{ h.gravatar(activity.hash, size=22) }}{% endif %}</td>
+        {% endfor %}
+    </tr>
+{% endfor %}
+</table>

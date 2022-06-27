@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+
+{% block primary_content_inner %}
+  {% set queues = h.get_tracker_queues() %}
+
+<h2>{{ _('Queues') }} ({{ _('Workers') }} + {{ _('Jobs') }})</h2>
+<table class="table table-striped table-bordered table-condensed">
+    <colgroup>
+        <col width="5">
+        <col width="55">
+        <col width="10">
+        <col width="10">
+        <col width="10">
+        <col width="10">
+    </colgroup>
+  <thead>
+    <tr>
+      <th scope="col" rowspan="3"></th>
+      <th scope="col" >{{ _('Queue') }}</th>
+      <th scope="col" >{{ _('Total') }}</th>
+      <th scope="col" >{{ _('Active') }}/{{ _('Queued') }}</th>
+      <th scope="col" >{{ _('Busy') }}/{{ _('Running') }}</th>
+      <th scope="col" >{{ _('Inactive') }}/{{ _('Failed')}}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for key, value in queues.items() %}
+      <tr>
+          <td rowspan="3" title="{{ key }}">{{ h.gravatar(h.hash(key), 25) }}</td>
+          <td colspan="5">{{ key }}</td>
+      </tr>
+      <tr>
+          <td>- {{ _('Workers') }}</td>
+          <td>{{ value.n_workers }}</td>
+          <td>{{ value.workers.active }}</td>
+          <td>{{ value.workers.busy }}</td>
+          <td>{{ value.workers.inactive }}</td>
+      </tr>
+      <tr>
+          <td>- {{ _('Jobs') }}</td>
+          <td>{{ value.n_jobs }}</td>
+          <td>{{ value.jobs.queued }}</td>
+          <td>{{ value.jobs.running }}</td>
+          <td>{{ value.jobs.failed }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ _('Trackers') }} ({{ _('Jobs') }})</h2>
+<table class="table table-striped table-bordered table-condensed">
+    <colgroup>
+        <col width="5">
+        <col width="45">
+        <col width="10">
+        <col width="10">
+        <col width="10">
+        <col width="10">
+        <col width="10">
+    </colgroup>
+  <thead>
+    <tr>
+      <th scope="col" ></th>
+      <th scope="col" >{{ _('Tracker') }}</th>
+      <th scope="col" >{{ _('Queue') }}</th>
+      <th scope="col" >{{ _('Total') }}</th>
+      <th scope="col" >{{ _('Queued') }}</th>
+      <th scope="col" >{{ _('Running') }}</th>
+      <th scope="col" >{{ _('Failed')}}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for key, value in queues.items() %}
+      {% for plugin_key, plugin_value in value.plugins.items() %}
+      <tr>
+          <td title="{{ plugin }}">{{ h.gravatar(h.hash(plugin_key), 25) }}</td>
+          <td>{{ plugin_key }}</td>
+          <td title="{{ key }}">{{ h.gravatar(h.hash(key), 25) }}</td>
+          <td>{{ plugin_value.n_jobs }}</td>
+          <td>{{ plugin_value.jobs.queued }}</td>
+          <td>{{ plugin_value.jobs.running }}</td>
+          <td>{{ plugin_value.jobs.failed }}</td>
+      </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
+
+{% block secondary_content %}
+  <div class="module module-narrow module-shallow">
+    <h2 class="module-heading">
+      <i class="fa fa-info-circle"></i>
+      {{ _('Trash') }}
+    </h2>
+    <div class="module-content">
+      {% trans %}
+        <p>Purge deleted datasets forever and irreversibly.</p>
+      {% endtrans %}
+    </div>
+  </div>
+{% endblock %}
