@@ -1,19 +1,87 @@
+# encoding: utf-8
 import logging
 
 import ckan.plugins as p
-import ckan.plugins as plugins
 from ckan import model
 from ckanext.tracker_ogr.plugin import OgrTrackerPlugin
+from domain import Configuration
+import ckanext.tracker.classes.helpers.data as tracker_helpers
+from worker.ogr import OgrWorker
+import paste.fileapp
+from ckan.common import request, response
+import ckan.lib.base as base
+import ckan.logic as logic
+import mimetypes
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-
+abort = base.abort
+NotFound = logic.NotFound
+NotAuthorized = logic.NotAuthorized
 _ = p.toolkit._
-
+g = p.toolkit.g
+check_access = p.toolkit.check_access
 
 class ResourceDataController(p.toolkit.BaseController):
-    plugins.implements(plugins.IConfigurable)
+    p.implements(p.IConfigurable)
     ogr = OgrTrackerPlugin()
+
+    def ogr_dump(self, resource_id):
+        """
+        Downloads an OGR exported file of download format specified
+        """
+        # Check access - resource should belong to public dataset.
+        try:
+            context = {'model': model, 'user': g.user,
+                       'auth_user_obj': g.userobj}
+            resource = p.toolkit.get_action('resource_show')(
+                context, {'id': resource_id})
+        except NotAuthorized:
+            abort(403, _('Not authorized to see this page'))
+        except NotFound:
+            abort(404, _('Resource not found'))
+
+
+        # Check download_format is supported, otherwise abort. Load formats from ogr-worker
+        ogr_worker = OgrWorker()
+        request_format = request.GET.get('format', None).lower()
+        if not request_format:
+            abort(404, _('This endpoint requires a format parameter.'))
+        if request_format not in ogr_worker.DEFAULT_SUPPORTED_FORMATS:
+            abort(404, _('"{}" is not OGR supported. Supported filetypes are: {} ').format(request_format, ", ".join(ogr_worker.DEFAULT_SUPPORTED_FORMATS)))
+
+        # Export OGR file and store temporarily
+        worker_name = 'ogr'
+        configuration = Configuration.from_dict(tracker_helpers.get_configuration_dict(worker_name))
+        ogr_response = ogr_worker.generate_ogr_file(configuration=configuration, resource_id=resource_id, request_format=request_format, datadictionary=None)
+        # log.info(ogr_response)
+        download_format = request_format
+        # map .shp extension into .zip extension
+        if request_format == 'shp':
+            download_format = 'zip'
+        # Fulfill request, download OGR file
+        if ogr_response.get("success", False):
+            filepath = ogr_response.get('path')
+            fileapp = paste.fileapp.FileApp(filepath)
+            try:
+                status, headers, app_iter = request.call_application(fileapp)
+            except OSError:
+                abort(404, _('Exported OGR file not found.'))
+            response.headers.update(dict(headers))
+            content_type, content_enc = mimetypes.guess_type("/{}.{}".format(resource_id, download_format))
+            if content_type:
+                response.headers['Content-Type'] = content_type
+            # assign content-disposition to headers to include resource name and proper extension
+            # handle non-ASCII resource name UnicodeEncodeError
+            response.headers['Content-Disposition'] = 'attachment; filename={resource_name}.{extension}'.format(
+                resource_name=resource.get('name').encode('utf-8', errors='ignore').replace(' ', '_'),
+                extension=download_format)
+            response.status = status
+            # Delete temporary OGR file
+            ogr_worker.delete_ogr_file(filepath)
+            return app_iter
+        else:
+            abort(404, _('OGR file export failed.'))
 
     def resource_data(self, id, resource_id):
         try:
