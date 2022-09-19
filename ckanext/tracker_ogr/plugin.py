@@ -104,6 +104,13 @@ class OgrTrackerPlugin(BaseTrackerPlugin):
             'resource_data_ogr', '/dataset/{id}/resource_data/{resource_id}',
             controller='ckanext.tracker_ogr.controllers:ResourceDataController',
             action='resource_data', ckan_icon='cloud-upload')
+
+        # generate new file from datastore using ogr2ogr capabilities
+        m.connect(
+            'ogr_dump', '/ogr/dump/{resource_id}',
+            controller='ckanext.tracker_ogr.controllers:ResourceDataController',
+            action='ogr_dump'
+        )
         return m
 
     # def does_resource_exist(self, res_dict, pkg_dict):
