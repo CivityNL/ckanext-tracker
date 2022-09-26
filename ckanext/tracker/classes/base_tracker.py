@@ -79,14 +79,22 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         """
         task = None
         job_context = context.copy()
+        # Added ignore_auth header, because the context.user and context.user_auth_obj have information about the user performing this action.
+        # The user is not necessarly a sysadmin, and the task_status_update call only authorizes sysadmins to perform it.
+        # Therefore we need to ignore the authorization otherwise this action is not sucessfull for users who are not sysadmin.
+        job_context['ignore_auth'] = True
         try:
             job = self.create_job(command)
             task = helpers.create_task(job_context, job, self.name, entity_type, res_dict, pkg_dict)
-            self.enqueue_job(context, job, entity_type, task.id, res_dict, pkg_dict)
+            if task:
+                task_id = task.id
+            else:
+                task_id = None
+            self.enqueue_job(context, job, entity_type, task_id, res_dict, pkg_dict)
             if task is not None:
                 helpers.update_task(job_context, task, state=PENDING)
         except Exception as unexpected_error:
-            log.error("An unexpected error occurred: {}".format(unexpected_error.message))
+            log.error("An unexpected error occurred: {}".format(unexpected_error))
             if task is not None:
                 helpers.update_task(job_context, task, state=ERROR, error=unexpected_error.message)
 
