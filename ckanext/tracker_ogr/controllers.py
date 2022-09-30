@@ -28,7 +28,8 @@ class ResourceDataController(p.toolkit.BaseController):
 
     def ogr_dump(self, resource_id):
         """
-        Downloads an OGR exported file of download format specified
+        Downloads an OGR exported file of download format specified.
+        Spatial filter can apply to get a specified geographical area of the data
         """
         # Check access - resource should belong to public dataset.
         try:
@@ -44,20 +45,38 @@ class ResourceDataController(p.toolkit.BaseController):
 
         # Check download_format is supported, otherwise abort. Load formats from ogr-worker
         ogr_worker = OgrWorker()
-        request_format = request.GET.get('format', None).lower()
-        if not request_format:
+
+        file_format = request.GET.get('format', None)
+        if file_format:
+            file_format = file_format.lower()
+        if not file_format:
             abort(404, _('This endpoint requires a format parameter.'))
-        if request_format not in ogr_worker.DEFAULT_SUPPORTED_FORMATS:
-            abort(404, _('"{}" is not OGR supported. Supported filetypes are: {} ').format(request_format, ", ".join(ogr_worker.DEFAULT_SUPPORTED_FORMATS)))
+        if file_format not in ogr_worker.DEFAULT_SUPPORTED_FORMATS:
+            abort(404, _('"{}" is not OGR supported. Supported filetypes are: {} ').format(file_format, ", ".join(ogr_worker.DEFAULT_SUPPORTED_FORMATS)))
+
+        query_geometry_shape = request.GET.get('queryGeometry', None)  # Not easy to verify the WKB value validity.
+        query_geometry_srid = request.GET.get('srid', None)  # Must correspond a positive integer
+
+        if (query_geometry_shape and not query_geometry_srid) or (not query_geometry_shape and query_geometry_srid):
+            abort(404, _('When applying a spatial filter to OGR download, both "query_geometry_shape" and "query_geometry_srid" parameters must be defined with a proper value.'.format(query_geometry_srid)))
+
+        if query_geometry_srid and not query_geometry_srid.isdigit():
+            abort(404, _('The geometry srid defined ("{}") is invalid.'.format(query_geometry_srid)))
 
         # Export OGR file and store temporarily
         worker_name = 'ogr'
         configuration = Configuration.from_dict(tracker_helpers.get_configuration_dict(worker_name))
-        ogr_response = ogr_worker.generate_ogr_file(configuration=configuration, resource_id=resource_id, request_format=request_format, datadictionary=None)
+        ogr_response = ogr_worker.generate_ogr_file(
+            configuration=configuration,
+            resource_id=resource_id,
+            file_format=file_format,
+            query_geometry_shape=query_geometry_shape,
+            query_geometry_srid=query_geometry_srid,
+            datadictionary=None)
         # log.info(ogr_response)
-        download_format = request_format
+        download_format = file_format
         # map .shp extension into .zip extension
-        if request_format == 'shp':
+        if file_format == 'shp':
             download_format = 'zip'
         # Fulfill request, download OGR file
         if ogr_response.get("success", False):
