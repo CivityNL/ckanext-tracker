@@ -22,29 +22,33 @@ class CkanToCkanDonlTrackerPlugin(CkanToCkanTrackerPlugin):
     worker = CkanToCkanDONLWorkerWrapper()
     mapper = MapperOneCkan()
 
+    ignore_packages = False
+    ignore_resources = True
+    separate_tracking = False
+
     badge_title = "DONL"
 
-    def do_package_update(self):
-        return self.do_package_upsert()
-
     def action_to_take_on_package_purge(self, context, package):
-        return True
+        return self.action_to_take_on_package_delete(context, package)
 
     def action_to_take_on_package_update(self, context, package, package_changes):
         if not has_id(package):
             log.debug("No package_id could be found, so nothing to do")
-            return False
+            return None
         if is_draft(package):
             log.debug('Drafts are weird. Let\'s wait until it finished before doing something')
-            return False
-        if not should_link_to_donl(package):
-            return False
-        if is_private(package):
-            return self.put_on_a_queue(context, 'package', self.do_package_delete(), None, package, None, package_changes)
-        return True
+            return None
+        if not should_link_to_donl(package) or is_private(package):
+            log.debug("Will try to delete any corresponding package in DONL")
+            return self.get_worker().purge_package
+        if package_changes:
+            log.debug("Will try to create or update any corresponding package in DONL")
+            return self.get_worker().upsert_package
+        log.debug("No action will be taken to change any corresponding package in DONL")
+        return None
 
     def action_to_take_on_package_create(self, context, package):
         return self.action_to_take_on_package_update(context, package, None)
 
     def action_to_take_on_package_delete(self, context, package):
-        return True
+        return self.get_worker().purge_package
