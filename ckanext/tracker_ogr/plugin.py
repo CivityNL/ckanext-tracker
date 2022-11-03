@@ -74,7 +74,11 @@ class OgrTrackerPlugin(BaseTrackerPlugin):
             if operation == model.domain_object.DomainObjectOperation.new or not operation:
                 revision_id = helpers.get_revision_id({'model': model, 'session': model.Session, 'user': c.user})
                 resource_changes = helpers.get_resource_changes(revision_id, entity.id)
-                if operation == model.domain_object.DomainObjectOperation.new or 'size' in resource_changes or 'hash' in resource_changes or 'format' in resource_changes:
+                if operation == model.domain_object.DomainObjectOperation.new \
+                        or 'url' in resource_changes \
+                        or 'size' in resource_changes \
+                        or 'hash' in resource_changes \
+                        or 'format' in resource_changes:
                     log.debug('OGR create_resource put on queue :: changes = {}'.format(resource_changes))
                     context = {'model': model, 'ignore_auth': True, 'defer_commit': True, 'user': 'automation'}
                     pkg_dict = toolkit.get_action("package_show")(context, {"id": entity.package_id})
