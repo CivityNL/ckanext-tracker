@@ -1,6 +1,5 @@
 # encoding: utf-8
 import logging
-
 import ckan.plugins as p
 from ckan import model
 from ckanext.tracker_ogr.plugin import OgrTrackerPlugin
@@ -12,6 +11,7 @@ from ckan.common import request, response
 import ckan.lib.base as base
 import ckan.logic as logic
 import mimetypes
+import os
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -66,14 +66,17 @@ class ResourceDataController(p.toolkit.BaseController):
         # Export OGR file and store temporarily
         worker_name = 'ogr'
         configuration = Configuration.from_dict(tracker_helpers.get_configuration_dict(worker_name))
+        # Replace resource metadata 'name' value with original filestore name, to be used for populating the new OGR generated resource.
+        file_name = self.get_name_from_url(resource.get('url'))
         ogr_response = ogr_worker.generate_ogr_file(
             configuration=configuration,
             resource_id=resource_id,
             file_format=file_format,
+            file_name=file_name,
             query_geometry_shape=query_geometry_shape,
             query_geometry_srid=query_geometry_srid,
-            datadictionary=None)
-        # log.info(ogr_response)
+            datadictionary=None
+            )
         download_format = file_format
         # map .shp extension into .zip extension
         if file_format == 'shp':
@@ -91,9 +94,9 @@ class ResourceDataController(p.toolkit.BaseController):
             if content_type:
                 response.headers['Content-Type'] = content_type
             # assign content-disposition to headers to include resource name and proper extension
-            # handle non-ASCII resource name UnicodeEncodeError
+
             response.headers['Content-Disposition'] = 'attachment; filename={resource_name}.{extension}'.format(
-                resource_name=resource.get('name').encode('utf-8', errors='ignore').replace(' ', '_'),
+                resource_name=file_name,
                 extension=download_format)
             response.status = status
             # Delete temporary OGR file
@@ -129,3 +132,12 @@ class ResourceDataController(p.toolkit.BaseController):
                                 'resource': p.toolkit.c.resource,
                                 'pkg_dict': p.toolkit.c.pkg_dict
                             })
+    @staticmethod
+    def get_name_from_url(url):
+        """
+        Return name as defined in original URL, removing the original extension
+        """
+        filename = os.path.basename(url)
+        if '.' in filename:
+            filename = '.'.join(filename.split('.')[:-1])
+        return filename
