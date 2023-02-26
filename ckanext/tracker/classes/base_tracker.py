@@ -83,6 +83,7 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         # The user is not necessarly a sysadmin, and the task_status_update call only authorizes sysadmins to perform it.
         # Therefore we need to ignore the authorization otherwise this action is not sucessfull for users who are not sysadmin.
         job_context['ignore_auth'] = True
+        job_context['session'] = context['model'].meta.create_local_session()
         try:
             job = self.create_job(command)
             task = helpers.create_task(job_context, job, self.name, entity_type, res_dict, pkg_dict)
