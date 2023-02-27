@@ -1,8 +1,9 @@
 from ckan import model
-from ckan.logic import NotFound
+from ckan.logic import NotFound, chained_action
 from ckan.model.package import Package
 from ckan.model.resource import Resource
-import helpers as helpers
+import helpers as th
+from context import TrackerContext
 from ckanext.tracker.classes import BaseTrackerPlugin
 import logging
 import ckan.plugins as plugins
@@ -18,9 +19,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     UI capabilities
     """
     plugins.implements(plugins.IMapper, inherit=True)
-    plugins.implements(plugins.IPackageController, inherit=True)
-
-    package_context = helpers.init_package_context()
+    plugins.implements(plugins.IActions)
 
     separate_tracking = False
     ignore_packages = False  # type: bool
@@ -32,195 +31,133 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     include_package_fields = None   # type: list
     exclude_package_fields = None   # type: list
 
-    def clear_context(self):
-        self.package_context = helpers.init_package_context()
+    def _action(self, type, function):
 
-    def filter_fields_from_resource_changes(self, resource_changes):
-        return helpers.filter_fields_from_changes(
-            resource_changes, self.include_resource_fields, self.exclude_resource_fields
+        @chained_action
+        def _chained_action(original_action, context, data_dict):
+            if 'tracker' not in context:
+                package_id = data_dict.get("id", None) if type == 'package' else data_dict.get("package_id", None)
+                context['tracker'] = TrackerContext(package_id)
+            context['tracker'].enter()
+            try:
+                result = original_action(context, data_dict)
+                context['tracker'].exit()
+                if context['tracker'].level():
+                    package_id = result.get("id", None) if type == 'package' else result.get("package_id", None)
+                    context['tracker'].after(package_id)
+                    self.determine_actions_based_on_context(context)
+                    del context['tracker']
+                return result
+            except Exception, e:
+                context['tracker'].exit()
+                if context['tracker'].level():
+                    del context['tracker']
+                raise e
+
+        return _chained_action
+
+    def get_actions(self):
+        types = ['package', 'resource']
+        functions = ['create', 'patch', 'update', 'delete']
+        actions = {"{}_{}".format(t, f): self._action(t, f) for t in types for f in functions}
+        actions['package_revise'] = self._action('package', 'revise')
+        return actions
+
+    def determine_actions_based_on_context(self, context):
+        tracker_context = context['tracker']  # type: TrackerContext
+        if tracker_context is None:
+            log.warning("Could not determine any tracker context")
+            return
+        pkg_dict = tracker_context.after_package()
+        before_package = tracker_context.before_package()
+        before_resources = {}
+        if before_package is not None:
+            before_resources = {res.get("id"): res for res in before_package.pop("resources", [])}
+        log.info("before_package = [{}]".format(before_package))
+        log.info("before_resources = [{}]".format(before_resources))
+        after_package = tracker_context.after_package()
+        after_resources = {}
+        if after_package is not None:
+            after_resources = {res.get("id"): res for res in after_package.pop("resources", [])}
+        log.info("after_package = [{}]".format(after_package))
+        log.info("after_resources = [{}]".format(after_resources))
+
+        changes_package = th.compare_dicts(
+            before_package, after_package, self.include_package_fields, self.exclude_package_fields
         )
+        log.info("changes_package = [{}]".format(changes_package))
 
-    def filter_fields_from_package_changes(self, package_changes):
-        return helpers.filter_fields_from_changes(
-            package_changes, self.include_package_fields, self.exclude_package_fields
-        )
+        created_resources = th.get_ids_inserted_resources(before_resources, after_resources)
+        deleted_resources = th.get_ids_deleted_resources(before_resources, after_resources)
+        active_resources = th.get_ids_same_resources(before_resources, after_resources)
+        changes_resources = {}
+        for res_id in active_resources:
+            res_changes = th.compare_dicts(
+                before_resources.get(res_id), after_resources.get(res_id),
+                self.include_resource_fields, self.exclude_resource_fields
+            )
+            if res_changes:
+                changes_resources[res_id] = res_changes
+        log.info("changes_resources = [{}]".format(changes_resources))
 
-    def create_context(self):
-        log.info("creating context ...")
-        return {'model': model, 'session': model.Session, 'user': c.user}
+        if before_package is None and after_package is not None:
+            # create package
+            if not self.ignore_packages:
+                self.package_create(context, pkg_dict)
+            if not self.ignore_resources:
+                for res_id in active_resources:
+                    self.resource_create(context, after_resources.get(res_id), pkg_dict)
+        elif before_package is not None and after_package is not None:
+            # update / delete
+            if before_package.get("id") != after_package.get("id"):
+                log.warning("Got a different package")
+                return
+            elif th.has_been_deleted(after_package, changes_package):
+                # delete
+                if not self.ignore_packages:
+                    self.package_delete(context, pkg_dict)
+                if not self.ignore_resources and not self.separate_tracking:
+                    for res_dict in pkg_dict.get("resources", []):
+                        self.resource_delete(context, res_dict, pkg_dict)
+            else:
+                if not self.ignore_packages:
+                    if changes_package or (self.ignore_resources and not self.separate_tracking and changes_resources):
+                        self.package_update(context, pkg_dict, changes_package)
+                if not self.ignore_resources:
+                    for res_id in created_resources:
+                        self.resource_create(context, after_resources.get(res_id), pkg_dict)
+                    for res_id in deleted_resources:
+                        self.resource_delete(context, after_resources.get(res_id), pkg_dict)
+                    for res_id in active_resources:
+                        if res_id in changes_resources or (changes_package and not self.separate_tracking):
+                            self.resource_update(
+                                context,
+                                after_resources.get(res_id), changes_resources.get(res_id), pkg_dict, changes_package)
+            # update / delete
+        else:
+            log.warning("Could not retrieve any information about a package")
+            pass
 
     # IMapper
-    def after_insert(self, mapper, connection, instance):
-        if mapper.entity == Resource:
-            helpers.add_resource_to_tracker_context(self.package_context, 'insert', instance)
-
-    '''
-    List of before_* implementations for the IResourceController and IPackageController. In some cases the IMapper is
-    also mentioned, but this is only due to conflicting naming of methods between the different interfaces. 
-    The main use of these implementations is to:
-     - check if we entered via the IResourceController (and if not via the IPackageController)
-     - clear the context for a fresh start
-    '''
-
-    # IPackageController
-    def before_package_create(self, context, pkg_dict):
-        self.clear_context()
-
-    # IPackageController
-    def before_package_update(self, context, pkg_dict):
-        self.clear_context()
-
-    '''
-    List of after_* implementations for the IResourceController, the IPackageController and the IMapper. 
-    The main use of these implementations is to differentiate between the different action due to conflicting naming and
-    pass the correct parameters to the specific action implementation __after_*_** where:
-     - '*' is either package, resource or mapper
-     - '**' is either create, delete, update or purge
-    '''
-
-    # IPackageController
-    def after_create(self, context, package):
-        """
-        This method is a Wrapper to combine the after_create for both the IPackageController and IResourceController
-        Checks if it comes from IPackageController or IResourceController
-
-        If IPackageController:
-            Check if any resources have been created (inserted)
-                trigger the corresponding method for each resource
-                (later the 'original' package_create method will be called)
-        If IResourceController:
-            Trigger the corresponding method
-
-       :param list *args: The list of args for either the IPackageController and IResourceController implementation
-       :param args[0]: Context
-       :param args[1]:
-                    IPackageController --> resource_dict
-                    IResourceController --> package_dict
-        """
-        self.__after_package_create(context, package.get("id"))
-
-    # IPackageController & IMapper
-    def after_update(self, *args):
-        """
-        This method is a wrapper to combine both the after_update for the IMapper, IPackageController and
-        IResourceController. In the first case a simple check is done to see if something got updated, for the
-        IResourceController hook it gets simply passed to the corresponding method. The tricky part is for the
-        IPackageController in which case it is checked if this hook was called after any IResourceController hook, in
-        which case all resource related changes are ignored. Otherwise all created/changed resources belonging to this
-        package are checked and if necessary the corresponding methods are triggered
-        """
-        if isinstance(args[0], dict) and isinstance(args[1], dict):
-            context = args[0]
-            package = args[1]
-            self.__after_package_update(context, package)
-        else:
-            mapper = args[0]
-            instance = args[2]
-            self.__after_mapper_update(mapper, instance)
-
-    # IPackageController & IMapper
-    def after_delete(self, *args):
+    def after_delete(self, mapper, connection, instance):
         """
         This method is a wrapper to combine both the after_delete for the IMapper, IPackageController and
         IResourceController. In case of the latter two it will trigger their corresponding methods. For the IMapper hook
         a first setup for a resource/package_purge has been implemented
         """
-        if isinstance(args[0], dict):
-            # check for IPackageController::after_delete
-            context = args[0]
-            package = args[1]
-            self.__after_package_delete(context, package)
-        else:
-            # check for IMapper::after_delete
-            mapper = args[0]
-            connection = args[1]
-            instance = args[2]
-            self.__after_mapper_delete(mapper, connection, instance)
-
-    '''
-    List of __after_*_** implementations which are called in after_* implementations for the IResourceController, the 
-    IPackageController and the IMapper.
-    '''
-
-    def __after_package_create(self, context, package_id):
-        pkg_dict = self.do_package_show(package_id, context, "__after_package_create")
-        if not self.ignore_packages:
-            self.package_create(context, pkg_dict)
-        inserted_resources = self.package_context['resources']['insert']
-        if inserted_resources:
-            if not self.ignore_resources:
-                for resource in inserted_resources:
-                    res_dict = self.do_resource_show(resource.get("id"), context, "__after_package_create")
-                    self.resource_create(context, res_dict, pkg_dict)
-        self.clear_context()
-
-    def __after_package_update(self, context, package):
-        pkg_dict = self.do_package_show(package.get("id"), context, "__after_package_update")
-        res_dict_dict = {resource.get("id"): resource for resource in pkg_dict.get("resources", [])}
-        revision_id = helpers.get_revision_id(context)
-        pkg_full_changes, res_full_changes_dict = helpers.get_package_changes(
-            revision_id, package.get("id"), include_extras=True, include_resources=True
-        )
-        pkg_changes = self.filter_fields_from_package_changes(pkg_full_changes.copy())
-
-        if not self.ignore_packages:
-            if pkg_changes or (self.ignore_resources and not self.separate_tracking and res_full_changes_dict):
-                self.package_update(context, pkg_dict, pkg_changes)
-        # get all inserted resources from context
-        inserted_resources = self.package_context['resources']['insert']
-        if inserted_resources:
-            if not self.ignore_resources:
-                for resource in inserted_resources:
-                    res_dict = res_dict_dict.pop(resource.get("id"))
-                    self.resource_create(context, res_dict, pkg_dict)
-        # get all updated resources from context
-        updated_resources = self.package_context['resources']['update']
-        if (updated_resources or res_dict_dict) and not self.ignore_resources:
-            for resource in updated_resources:
-                if resource.get("id") not in res_dict_dict:
-                    res_dict_dict[resource.get("id")] = resource
-            for res_dict in res_dict_dict.values():
-                res_full_changes = res_full_changes_dict.get(res_dict.get("id"), {})
-                res_changes = self.filter_fields_from_resource_changes(res_full_changes.copy())
-                if res_dict.get("state") == "active":
-                    if res_changes or (pkg_changes and not self.separate_tracking):
-                        self.resource_update(context, res_dict, res_changes, pkg_dict, pkg_changes)
-                elif res_dict.get("state") == "deleted" and "state" in res_full_changes:
-                    self.resource_delete(context, res_dict, pkg_dict)
-        self.clear_context()
-
-    def __after_mapper_update(self, mapper, instance):
-        # due to the way an update works newly created resources will also get updated. This prevents doubles
+        context = {'model': model, 'session': model.Session, 'user': c.user}
         if mapper.entity == Resource:
-            if instance.id not in [res.get("id") for res in self.package_context['resources']['insert']]:
-                helpers.add_resource_to_tracker_context(self.package_context, 'update', instance)
-
-    def __after_package_delete(self, context, package):
-        package_id = package.get("id")
-        pkg_dict = self.do_package_show(package_id, context, "__after_package_delete")
-        if not self.ignore_packages:
-            self.package_delete(context, pkg_dict)
-        if not self.ignore_resources and not self.separate_tracking:
-            resources = pkg_dict.get("resources", [])
-            for res_dict in resources:
-                self.resource_delete(context, res_dict, pkg_dict)
-        self.clear_context()
-
-    def __after_mapper_delete(self, mapper, connection, instance):
-        context = self.create_context()
-        if mapper.entity == Resource:
-            helpers.purge_task_statuses(connection, instance.id, 'resource', self.name)
+            th.purge_task_statuses(connection, instance.id, 'resource', self.name)
             if not self.ignore_resources:
                 # getting the package as entity instead of sing package_show as we don't have context
                 pkg_dict = self.do_package_show(instance.package_id, context, method="__after_mapper_delete")
                 res_dict = instance.as_dict()
                 self.resource_purge(context, res_dict, pkg_dict)
         elif mapper.entity == Package:
-            helpers.purge_task_statuses(connection, instance.id, 'package', self.name)
+            th.purge_task_statuses(connection, instance.id, 'package', self.name)
             if not self.ignore_packages:
                 pkg_dict = self.do_package_show(instance.id, context, method="__after_mapper_delete")
                 self.package_purge(context, pkg_dict)
-
 
     # Package & Resource Public Functions ***********************************************************************
     def package_create(self, context, pkg_dict):
@@ -315,120 +252,3 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
             self.name, method, bool(res_dict)
         ))
         return res_dict
-
-    # def on_resource_create(self, context, res_dict, pkg_dict):
-    #     action = None
-    #     if self.should_resource_exist(res_dict, pkg_dict):
-    #         action = self.action_on_resource_create()
-    #     if action:
-    #         self.put_on_a_queue(context, 'resource', action, res_dict, pkg_dict, None, None)
-    #
-    # def on_resource_update(self, context, res_dict, resource_changes, pkg_dict, package_changes):
-    #     should_resource_exist = self.should_resource_exist(res_dict, pkg_dict)
-    #     does_resource_exist = self.does_resource_exist(res_dict, pkg_dict)
-    #     if does_resource_exist is None:
-    #         # create a copy of the new res_dict and update it with the old values from the changes
-    #         old_res_dict = res_dict.copy()
-    #         old_res_dict.update({key: resource_changes[key]["old"] for key in resource_changes})
-    #         # create a copy of the new res_dict and update it with the old values from the changes
-    #         old_pkg_dict = pkg_dict.copy()
-    #         old_pkg_dict.update({key: package_changes[key]["old"] for key in package_changes})
-    #         # determine if the resource should exist based on the previous information
-    #         does_resource_exist = self.should_resource_exist(old_res_dict, old_pkg_dict)
-    #     filtered_res_changes = self.filter_fields_from_resource_changes(resource_changes.copy())
-    #     filtered_pkg_changes = self.filter_fields_from_package_changes(package_changes.copy())
-    #     action = None
-    #     if not should_resource_exist and does_resource_exist:
-    #         action = self.action_on_resource_delete()
-    #     elif should_resource_exist and not does_resource_exist:
-    #         action = self.action_on_resource_create()
-    #     else:
-    #         if filtered_res_changes or filtered_pkg_changes:
-    #             action = self.action_on_resource_update()
-    #     if action is not None:
-    #         self.put_on_a_queue(context, 'resource', action, res_dict, pkg_dict,
-    #                             filtered_res_changes, filtered_pkg_changes)
-    #
-    # def on_resource_purge(self, context, res_dict, pkg_dict):
-    #     does_resource_exist = self.does_resource_exist(res_dict, pkg_dict)
-    #     if does_resource_exist is None:
-    #         does_resource_exist = self.should_resource_exist(res_dict, pkg_dict)
-    #     action = None
-    #     if does_resource_exist:
-    #         action = self.action_on_resource_purge()
-    #     if action:
-    #         self.put_on_a_queue(context, 'resource', action, res_dict, pkg_dict, None, None)
-    #
-    # def on_package_create(self, context, pkg_dict):
-    #     action = None
-    #     if self.should_package_exist(pkg_dict):
-    #         action = self.action_on_package_create()
-    #     if action:
-    #         self.put_on_a_queue(context, 'package', action, None, pkg_dict, None, None)
-    #
-    # def on_package_update(self, context, pkg_dict, package_changes):
-    #     should_package_exist = self.should_package_exist(pkg_dict)
-    #     does_package_exist = self.does_package_exist(pkg_dict)
-    #     if does_package_exist is None:
-    #         # create a copy of the new res_dict and update it with the old values from the changes
-    #         old_pkg_dict = pkg_dict.copy()
-    #         old_pkg_dict.update({key: package_changes[key]["old"] for key in package_changes})
-    #         # determine if the resource should exist based on the previous information
-    #         does_package_exist = self.should_package_exist(old_pkg_dict)
-    #     filtered_pkg_changes = self.filter_fields_from_package_changes(package_changes.copy())
-    #     action = None
-    #     if not should_package_exist and does_package_exist:
-    #         action = self.action_on_package_delete()
-    #     elif should_package_exist and not does_package_exist:
-    #         action = self.action_on_package_create()
-    #     else:
-    #         if filtered_pkg_changes:
-    #             action = self.action_on_resource_update()
-    #     if action is not None:
-    #         self.put_on_a_queue(context, 'package', action, None, pkg_dict, None, filtered_pkg_changes)
-    #
-    # def on_package_purge(self, context, pkg_dict):
-    #     does_package_exist = self.does_package_exist(pkg_dict)
-    #     if does_package_exist is None:
-    #         does_package_exist = self.should_package_exist(pkg_dict)
-    #     action = None
-    #     if does_package_exist:
-    #         action = self.action_on_package_purge()
-    #     if action:
-    #         self.put_on_a_queue(context, 'package', action, None, pkg_dict, None, None)
-    #
-    # def does_package_exist(self, pkg_dict):
-    #     pass
-    #
-    # def does_resource_exist(self, res_dict, pkg_dict):
-    #     pass
-    #
-    # def should_package_exist(self, pkg_dict):
-    #     pass
-    #
-    # def should_resource_exist(self, res_dict, pkg_dict):
-    #     pass
-    #
-    # def action_on_package_create(self):
-    #     pass
-    #
-    # def action_on_package_update(self):
-    #     pass
-    #
-    # def action_on_package_delete(self):
-    #     pass
-    #
-    # def action_on_package_purge(self):
-    #     pass
-    #
-    # def action_on_resource_create(self):
-    #     pass
-    #
-    # def action_on_resource_update(self):
-    #     pass
-    #
-    # def action_on_resource_delete(self):
-    #     pass
-    #
-    # def action_on_resource_purge(self):
-    #     pass
