@@ -31,7 +31,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     include_package_fields = None   # type: list
     exclude_package_fields = None   # type: list
 
-    def _action(self, type, function):
+    def _action(self, type):
 
         @chained_action
         def _chained_action(original_action, context, data_dict):
@@ -59,8 +59,8 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     def get_actions(self):
         types = ['package', 'resource']
         functions = ['create', 'patch', 'update', 'delete']
-        actions = {"{}_{}".format(t, f): self._action(t, f) for t in types for f in functions}
-        actions['package_revise'] = self._action('package', 'revise')
+        actions = {"{}_{}".format(t, f): self._action(t) for t in types for f in functions}
+        actions['package_revise'] = self._action('package')
         return actions
 
     def determine_actions_based_on_context(self, context):
@@ -73,19 +73,15 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
         before_resources = {}
         if before_package is not None:
             before_resources = {res.get("id"): res for res in before_package.pop("resources", [])}
-        log.info("before_package = [{}]".format(before_package))
-        log.info("before_resources = [{}]".format(before_resources))
+
         after_package = tracker_context.after_package()
         after_resources = {}
         if after_package is not None:
             after_resources = {res.get("id"): res for res in after_package.pop("resources", [])}
-        log.info("after_package = [{}]".format(after_package))
-        log.info("after_resources = [{}]".format(after_resources))
 
         changes_package = th.compare_dicts(
             before_package, after_package, self.include_package_fields, self.exclude_package_fields
         )
-        log.info("changes_package = [{}]".format(changes_package))
 
         created_resources = th.get_ids_inserted_resources(before_resources, after_resources)
         deleted_resources = th.get_ids_deleted_resources(before_resources, after_resources)
@@ -98,7 +94,6 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
             )
             if res_changes:
                 changes_resources[res_id] = res_changes
-        log.info("changes_resources = [{}]".format(changes_resources))
 
         if before_package is None and after_package is not None:
             # create package
