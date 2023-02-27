@@ -4,7 +4,7 @@ import logic.action.update as action_update
 import logic.auth.update as auth_update
 from ckan import model
 from ckan.model import Resource, Package
-from ckanext.tracker.classes import BaseTrackerPlugin
+from ckanext.tracker.classes import PackageResourceTrackerPlugin
 from ckanext.tracker_ogr.interface import ITrackerOgr
 from worker.ogr import OgrWorkerWrapper
 import ckanext.tracker.classes.helpers as helpers
@@ -17,74 +17,26 @@ log = logging.getLogger(__name__)
 
 
 # TODO move this away from trackers, and put it in the project 'ckanext-ogrloader'
-class OgrTrackerPlugin(BaseTrackerPlugin):
+class OgrTrackerPlugin(PackageResourceTrackerPlugin):
     """
     This beast of a Tracker is the replacement of the xloader/datapusher etc using the ogr2ogr command to push data to
     the datastore. It has its own Interface which can be triggerd by the extra hook actions which should also work with
     'old' setups
     """
-    plugins.implements(plugins.IDomainObjectModification)
-    plugins.implements(plugins.IResourceUrlChange)
+
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IRoutes, inherit=True)
-    plugins.implements(plugins.IMapper, inherit=True)
 
     queue_name = 'ogr'
     worker = OgrWorkerWrapper()
 
-    ignore_resources = True
+    ignore_resources = False
     ignore_packages = True
+    separate_tracking = True
 
-    # IDomainObjectModification & IResourceUrlChange
-    def notify(self, entity, operation=None):
-
-        # TODO Checks to act on Notify:
-        # is it supported by the OGR
-        # Is it an Upload
-        # Did the file changed (resource.hash and resource.size)
-        # TODO later Is/was Datastore Active
-        # Resource Changed Format
-
-        format_to_extension_mapping = {
-            "csv": "csv",
-            "dgn": "dgn",
-            "geojson": "json",
-            "json": "json",
-            "gpkg": "gpkg",
-            "shape/zip": "zip",
-            "shape-zip": "zip",
-            "zip": "zip",
-            "xls": "xls",
-            "xlsx": "xlsx"
-        }
-
-        if isinstance(entity, model.Resource):
-            if entity.url_type in ('datapusher', 'xloader', 'datastore'):
-                log.debug('Skipping putting the resource {r.id} through OGR because '
-                          'url_type "{r.url_type}" means resource.url '
-                          'points to the datastore already, so loading '
-                          'would be circular.'.format(r=entity))
-                return
-
-            # IDomainObjectModification == NEW and IResourceUrlChange Route
-            # TODO adjust if statement to match this scenario bellow
-            # if resource_create or (resource update with url in resource_changes):
-            if operation == model.domain_object.DomainObjectOperation.new or not operation:
-                revision_id = helpers.get_revision_id({'model': model, 'session': model.Session, 'user': c.user})
-                resource_changes = helpers.get_resource_changes(revision_id, entity.id)
-                if operation == model.domain_object.DomainObjectOperation.new \
-                        or 'url' in resource_changes \
-                        or 'size' in resource_changes \
-                        or 'hash' in resource_changes \
-                        or 'format' in resource_changes:
-                    log.debug('OGR create_resource put on queue :: changes = {}'.format(resource_changes))
-                    context = {'model': model, 'ignore_auth': True, 'defer_commit': True, 'user': 'automation'}
-                    pkg_dict = toolkit.get_action("package_show")(context, {"id": entity.package_id})
-                    self.put_on_a_queue(context, 'resource', self.get_worker().create_resource, entity.as_dict(), pkg_dict, None, None)
-                else:
-                    log.debug('NO REASON FOR OGR create_resource put on queue :: changes = {}'.format(resource_changes))
+    include_resource_fields = ['url', 'size', 'hash', 'format']
 
     # IActions
     def get_actions(self):
@@ -117,22 +69,20 @@ class OgrTrackerPlugin(BaseTrackerPlugin):
         )
         return m
 
-    # def does_resource_exist(self, res_dict, pkg_dict):
-    #     correct_format = res_dict.get('format', None) not in ['wms', 'wfs']
-    #     fields_filled = bool(res_dict.get("wfs_url", None)) and bool(res_dict.get("wms_url", None))
-    #     return correct_format and fields_filled
-    #
-    # def should_resource_exist(self, res_dict, pkg_dict):
-    #     active_resource = res_dict.get("state", None) == "active"
-    #     active_package = pkg_dict.get("state", None) == "active"
-    #     link_enabled = link_is_enabled(pkg_dict, 'geoserver_link_enabled')
-    #     fields = ['name', 'description', 'layer_extent', 'layer_srid']
-    #     valid_resource = all([res_dict.get(field, None) for field in fields])
-    #     return active_resource and active_package and link_enabled and valid_resource
+    #  Return the action for each Hook - Default to None ***********************************
+    def action_to_take_on_resource_create(self, context, res_dict, pkg_dict):
+        context = {'model': model, 'ignore_auth': True, 'defer_commit': True, 'user': 'automation'}
+        return self.put_on_a_queue(context, 'resource',
+                                   self.get_worker().create_resource, res_dict, pkg_dict, None, None)
 
-    # IMapper
-    def after_delete(self, mapper, connection, instance):
-        if mapper.entity == Resource:
-            helpers.purge_task_statuses(connection, instance.id, 'resource', self.name)
-        elif mapper.entity == Package:
-            helpers.purge_task_statuses(connection, instance.id, 'package', self.name)
+    def action_to_take_on_resource_update(self, context, res_dict, resource_changes, pkg_dict, package_changes):
+        return self.action_to_take_on_resource_create(context, res_dict, pkg_dict)
+
+    def action_to_take_on_resource_delete(self, context, res_dict, pkg_dict):
+        if res_dict.get("datastore_active", False):
+            context = {'model': model, 'ignore_auth': True, 'defer_commit': True, 'user': 'automation'}
+            return self.put_on_a_queue(context, 'resource',
+                                       self.get_worker().delete_resource, res_dict, pkg_dict, None, None)
+
+    def action_to_take_on_resource_purge(self, context, res_dict, pkg_dict):
+        return self.action_to_take_on_resource_delete(context, res_dict, pkg_dict)

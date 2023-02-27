@@ -22,26 +22,33 @@ class TrackerController(plugins.toolkit.BaseController):
 
     def resource_data(self, id, resource_id):
         try:
-            c.pkg_dict = get_action('package_show')(
+            pkg_dict = get_action('package_show')(
                 None, {'id': id}
             )
-            c.resource = get_action('resource_show')(
+            resource = get_action('resource_show')(
                 None, {'id': resource_id}
             )
         except (ObjectNotFound, NotAuthorized):
             abort(404, _('Resource not found'))
 
-        return render('tracker/resource_data.html')
+        return render('tracker/resource_data.html', extra_vars={
+            'pkg_dict': pkg_dict,
+            'resource': resource,
+            'dataset_type': pkg_dict.get("type", "dataset")
+        })
 
     def package_data(self, id):
         try:
-            c.pkg_dict = get_action('package_show')(
+            pkg_dict = get_action('package_show')(
                 None, {'id': id}
             )
         except (ObjectNotFound, NotAuthorized):
             abort(404, _('Package not found'))
 
-        return render('tracker/package_data.html')
+        return render('tracker/package_data.html', extra_vars={
+            'pkg_dict': pkg_dict,
+            'dataset_type': pkg_dict.get("type", "dataset")
+        })
 
     def queues(self):
         return render('admin/trackers.html')
