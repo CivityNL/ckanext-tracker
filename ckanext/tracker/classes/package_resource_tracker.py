@@ -145,18 +145,14 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
         IResourceController. In case of the latter two it will trigger their corresponding methods. For the IMapper hook
         a first setup for a resource/package_purge has been implemented
         """
+        super(PackageResourceTrackerPlugin, self).after_delete(mapper, connection, instance)
         context = {'model': model, 'session': model.Session, 'user': c.user}
-        if mapper.entity == Resource:
-            th.purge_task_statuses(connection, instance.id, 'resource', self.name)
-            if not self.ignore_resources:
-                # getting the package as entity instead of sing package_show as we don't have context
-                pkg_dict = self.do_package_show(instance.package_id, context, method="__after_mapper_delete")
+        if mapper.entity == Resource and not self.ignore_resources:
+                pkg_dict = instance['package'].as_dict()
                 res_dict = instance.as_dict()
                 self.resource_purge(context, res_dict, pkg_dict)
-        elif mapper.entity == Package:
-            th.purge_task_statuses(connection, instance.id, 'package', self.name)
-            if not self.ignore_packages:
-                pkg_dict = self.do_package_show(instance.id, context, method="__after_mapper_delete")
+        elif mapper.entity == Package and not self.ignore_packages:
+                pkg_dict = instance.as_dict()
                 self.package_purge(context, pkg_dict)
 
     # Package & Resource Public Functions ***********************************************************************
