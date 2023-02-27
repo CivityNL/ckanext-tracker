@@ -1,9 +1,10 @@
-import helpers as helpers
+import helpers as th
 import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.tracker.backend import TrackerBackend
 from domain import Configuration
+from ckan.model import Resource, Package
 from worker import WorkerWrapper
 from mapper.mapper import Mapper
 from rq import Queue
@@ -20,6 +21,7 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
     UI capabilities
     """
     plugins.implements(plugins.IConfigurable)
+    plugins.implements(plugins.IMapper, inherit=True)
 
     queue_name = None  # type: str
     configuration = None  # type: Configuration
@@ -39,8 +41,8 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         """
         if self.queue_name is None:
             self.queue_name = self.name
-        self.redis_connection = helpers.set_connection()
-        self.configuration = Configuration.from_dict(helpers.get_configuration_dict(self.name))
+        self.redis_connection = th.set_connection()
+        self.configuration = Configuration.from_dict(th.get_configuration_dict(self.name))
         TrackerBackend.register(self)
 
     # Getters
@@ -86,18 +88,18 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         job_context['session'] = context['model'].meta.create_local_session()
         try:
             job = self.create_job(command)
-            task = helpers.create_task(job_context, job, self.name, entity_type, res_dict, pkg_dict)
+            task = th.create_task(job_context, job, self.name, entity_type, res_dict, pkg_dict)
             if task:
                 task_id = task.id
             else:
                 task_id = None
             self.enqueue_job(context, job, entity_type, task_id, res_dict, pkg_dict)
             if task is not None:
-                helpers.update_task(job_context, task, state=PENDING)
+                th.update_task(job_context, task, state=PENDING)
         except Exception as unexpected_error:
             log.error("An unexpected error occurred: {}".format(unexpected_error))
             if task is not None:
-                helpers.update_task(job_context, task, state=ERROR, error=unexpected_error.message)
+                th.update_task(job_context, task, state=ERROR, error=unexpected_error.message)
 
     def create_job(self, command):
         """
@@ -114,10 +116,17 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
 
     def enqueue_job(self, context, job, entity_type, task_id, res_dict, pkg_dict):
         q = Queue(self.get_queue_name(), connection=self.get_connection())
-        job.args = helpers.get_data(context, self.configuration, entity_type, task_id, self.mapper, res_dict, pkg_dict)
+        job.args = th.get_data(context, self.configuration, entity_type, task_id, self.mapper, res_dict, pkg_dict)
         job.description = 'Job for action [{}] on {} [{}] created by {}'.format(
             job.func_name,
             entity_type,
             res_dict.get("id") if entity_type == 'resource' else pkg_dict.get("id"),
             self.name)
         q.enqueue_job(job)
+
+    # IMapper
+    def after_delete(self, mapper, connection, instance):
+        if mapper.entity == Resource:
+            th.purge_task_statuses(connection, instance.id, 'resource', self.name)
+        elif mapper.entity == Package:
+            th.purge_task_statuses(connection, instance.id, 'package', self.name)
