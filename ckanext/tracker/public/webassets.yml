@@ -1,0 +1,4 @@
+tracker_css:
+  output: ckanext-tracker/tracker.css
+  contents:
+    - css/tracker.css
