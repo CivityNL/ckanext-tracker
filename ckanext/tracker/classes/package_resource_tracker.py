@@ -8,7 +8,6 @@ from ckanext.tracker.classes import BaseTrackerPlugin
 import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.common import c
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +47,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
                     self.determine_actions_based_on_context(context)
                     del context['tracker']
                 return result
-            except Exception, e:
+            except Exception as e:
                 context['tracker'].exit()
                 if context['tracker'].level():
                     del context['tracker']
@@ -141,7 +140,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
         a first setup for a resource/package_purge has been implemented
         """
         super(PackageResourceTrackerPlugin, self).after_delete(mapper, connection, instance)
-        context = {'model': model, 'session': model.Session, 'user': c.user}
+        context = {'model': model, 'session': model.Session, 'user': toolkit.g.user}
         if mapper.entity == Resource and not self.ignore_resources:
                 pkg_dict = instance['package'].as_dict()
                 res_dict = instance.as_dict()

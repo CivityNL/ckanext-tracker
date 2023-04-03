@@ -22,7 +22,7 @@ import logging
 
 
 def get_tracker_activities(entity_type, entity_id, limit=100):
-    context = {'user': toolkit.c.user}
+    context = {'user': toolkit.g.user}
     trackers = []
     result = {}
     for tracker in TrackerBackend.get_trackers():
@@ -259,7 +259,7 @@ def get_tracker_statuses(entity_type, entity_id):
     @param entity_id: the id of an entity (resource id, package id, etc)
     @return: list of dicts containing the information of the TaskStatus objects
     """
-    context = {'user': toolkit.c.user}
+    context = {'user': toolkit.g.user}
     result = {}
     for tracker in TrackerBackend.get_trackers():
         if tracker.show_ui:
@@ -277,7 +277,7 @@ def get_tracker_badges(entity_type, entity_id):
     @param entity_id: the id of an entity (resource id, package id, etc)
     @return: list of strings containing the badges
     """
-    context = {'user': toolkit.c.user}
+    context = {'user': toolkit.g.user}
     result = {}
     for tracker in TrackerBackend.get_trackers():
         if tracker.show_badge:
