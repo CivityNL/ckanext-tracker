@@ -49,7 +49,9 @@ class GeonetworkTrackerPlugin(PackageResourceTrackerPlugin):
 
     # IActions
     def get_actions(self):
-        return {'geonetwork_callback_hook': action_update.geonetwork_callback_hook}
+        actions = super(GeonetworkTrackerPlugin, self).get_actions()
+        actions.update({'geonetwork_callback_hook': action_update.geonetwork_callback_hook})
+        return actions
 
     # IAuthFunctions
     def get_auth_functions(self):

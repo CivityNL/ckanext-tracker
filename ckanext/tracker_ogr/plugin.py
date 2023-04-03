@@ -40,9 +40,9 @@ class OgrTrackerPlugin(PackageResourceTrackerPlugin):
 
     # IActions
     def get_actions(self):
-        return {
-            'ogr_callback_hook': action_update.ogr_callback_hook
-        }
+        actions = super(OgrTrackerPlugin, self).get_actions()
+        actions.update({'ogr_callback_hook': action_update.ogr_callback_hook})
+        return actions
 
     # IAuthFunctions
     def get_auth_functions(self):

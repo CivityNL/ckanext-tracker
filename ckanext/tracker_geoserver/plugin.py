@@ -48,9 +48,9 @@ class GeoserverTrackerPlugin(PackageResourceTrackerPlugin):
 
     # IActions
     def get_actions(self):
-        return {
-            'geoserver_callback_hook': action_update.geoserver_callback_hook
-        }
+        actions = super(GeoserverTrackerPlugin, self).get_actions()
+        actions.update({'geoserver_callback_hook': action_update.geoserver_callback_hook})
+        return actions
 
     # IAuthFunctions
     def get_auth_functions(self):
