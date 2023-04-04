@@ -1,11 +1,11 @@
 import logging
-import ckan.plugins as plugins
+from ckan.plugins import toolkit
 
 log = logging.getLogger(__name__)
 
 
 def get_show(object_type, object_id):
-    return plugins.toolkit.get_action('{}_show'.format(object_type))({'ignore_auth': True}, {'id': object_id})
+    return toolkit.get_action('{}_show'.format(object_type))({'ignore_auth': True}, {'id': object_id})
 
 
 class TrackerContext(object):

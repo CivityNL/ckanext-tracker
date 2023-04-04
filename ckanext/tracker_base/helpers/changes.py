@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Optional, List
-from model import State
+from ckan.model import State
 
 log = logging.getLogger(__name__)
 

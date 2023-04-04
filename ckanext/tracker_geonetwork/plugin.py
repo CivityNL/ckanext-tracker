@@ -1,12 +1,12 @@
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker.classes import PackageResourceTrackerPlugin
-from helpers import geonetwork_link_is_enabled, should_publish_to_geonetwork, should_unpublish_from_geonetwork
+from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_geonetwork.helpers import geonetwork_link_is_enabled
 from worker.geonetwork import GeoNetworkWorkerWrapper
 import ckan.plugins as plugins
 import logic.action.update as action_update
 import logic.auth.update as auth_update
 from ckanext.tracker_geoserver.interface import ITrackerGeoserver
-from ckanext.tracker.classes.helpers import link_is_enabled
+from ckanext.tracker_base.helpers import link_is_enabled
 import logging
 
 logging.basicConfig()
@@ -122,14 +122,3 @@ class GeonetworkTrackerPlugin(PackageResourceTrackerPlugin):
             self.put_on_a_queue(context, 'resource', command, resource_dict, dataset_dict, None, None)
 
         pass
-
-    # def does_resource_exist(self, res_dict, pkg_dict):
-    #     return res_dict.get("geonetwork_url", None)
-    #
-    # def should_resource_exist(self, res_dict, pkg_dict):
-    #     active_resource = res_dict.get("state", None) == "active"
-    #     active_package = pkg_dict.get("state", None) == "active"
-    #     link_enabled = link_is_enabled(pkg_dict, 'geonetwork_link_enabled')
-    #     fields = ['wfs_url', 'wms_url']
-    #     valid_resource = all([res_dict.get(field, None) for field in fields])
-    #     return active_resource and active_package and link_enabled and valid_resource

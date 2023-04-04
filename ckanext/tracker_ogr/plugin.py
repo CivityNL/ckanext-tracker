@@ -1,16 +1,12 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-import logic.action.update as action_update
-import logic.auth.update as auth_update
+import ckanext.tracker_ogr.logic.action.update as action_update
+import ckanext.tracker_ogr.logic.auth.update as auth_update
 from ckan import model
-from ckan.model import Resource, Package
-from ckanext.tracker.classes import PackageResourceTrackerPlugin
-from ckanext.tracker_ogr.interface import ITrackerOgr
+from ckanext.tracker_base import PackageResourceTrackerPlugin
 from worker.ogr import OgrWorkerWrapper
-import ckanext.tracker.classes.helpers as helpers
-from ckan.common import c
-
 import logging
+import ckanext.tracker_ogr.views as views
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -54,20 +50,10 @@ class OgrTrackerPlugin(PackageResourceTrackerPlugin):
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
 
-    # IRoutes
-    def before_map(self, m):
-        m.connect(
-            'resource_data_ogr', '/dataset/{id}/resource_data/{resource_id}',
-            controller='ckanext.tracker_ogr.controllers:ResourceDataController',
-            action='resource_data', ckan_icon='cloud-upload')
-
-        # generate new file from datastore using ogr2ogr capabilities
-        m.connect(
-            'ogr_dump', '/ogr/dump/{resource_id}',
-            controller='ckanext.tracker_ogr.controllers:ResourceDataController',
-            action='ogr_dump'
-        )
-        return m
+    # IBlueprint
+    def get_blueprint(self):
+        u'''Return a Flask Blueprint object to be registered by the app.'''
+        return views.tracker_ogr
 
     #  Return the action for each Hook - Default to None ***********************************
     def action_to_take_on_resource_create(self, context, res_dict, pkg_dict):

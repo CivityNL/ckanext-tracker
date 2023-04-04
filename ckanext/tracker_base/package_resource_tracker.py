@@ -1,10 +1,7 @@
 from ckan import model
-from ckan.logic import NotFound, chained_action
-from ckan.model.package import Package
-from ckan.model.resource import Resource
-import helpers as th
+import ckanext.tracker_base.helpers as th
 from context import TrackerContext
-from ckanext.tracker.classes import BaseTrackerPlugin
+from base_tracker import BaseTrackerPlugin
 import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -32,7 +29,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
 
     def _action(self, type):
 
-        @chained_action
+        @toolkit.chained_action
         def _chained_action(original_action, context, data_dict):
             if 'tracker' not in context:
                 package_id = data_dict.get("id", None) if type == 'package' else data_dict.get("package_id", None)
@@ -141,11 +138,11 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
         """
         super(PackageResourceTrackerPlugin, self).after_delete(mapper, connection, instance)
         context = {'model': model, 'session': model.Session, 'user': toolkit.g.user}
-        if mapper.entity == Resource and not self.ignore_resources:
+        if mapper.entity == model.Resource and not self.ignore_resources:
                 pkg_dict = instance['package'].as_dict()
                 res_dict = instance.as_dict()
                 self.resource_purge(context, res_dict, pkg_dict)
-        elif mapper.entity == Package and not self.ignore_packages:
+        elif mapper.entity == model.Package and not self.ignore_packages:
                 pkg_dict = instance.as_dict()
                 self.package_purge(context, pkg_dict)
 
@@ -226,7 +223,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     def do_package_show(self, package_id, context=None, method=None):
         try:
             pkg_dict = toolkit.get_action("package_show")(context, {"id": package_id})
-        except NotFound:
+        except toolkit.NotFound:
             pkg_dict = None
         log.debug("{} :: {} :: package_show returned something = [{}]".format(
             self.name, method, bool(pkg_dict)
@@ -236,7 +233,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     def do_resource_show(self, resource_id, context=None, method=None):
         try:
             res_dict = toolkit.get_action("resource_show")(context, {"id": resource_id})
-        except NotFound:
+        except toolkit.NotFound:
             res_dict = None
         log.debug("{} :: {} :: resource_show returned something = [{}]".format(
             self.name, method, bool(res_dict)

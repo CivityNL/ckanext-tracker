@@ -1,5 +1,5 @@
 from ckanext.tracker_ogr.interface import ITrackerOgr
-from ckanext.tracker.classes import action_callback_hook
+from ckanext.tracker_base import action_callback_hook
 
 
 def ogr_callback_hook(context, data_dict):

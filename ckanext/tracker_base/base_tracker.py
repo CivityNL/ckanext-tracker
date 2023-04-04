@@ -1,8 +1,8 @@
-import helpers as th
+import ckanext.tracker_base.helpers as th
 import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker.backend import TrackerBackend
+from ckanext.tracker_base.backend import TrackerBackend
 from domain import Configuration
 from ckan.model import Resource, Package
 from worker import WorkerWrapper

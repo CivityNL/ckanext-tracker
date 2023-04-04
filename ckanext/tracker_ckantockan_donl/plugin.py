@@ -1,7 +1,7 @@
 import logging
 
 from ckanext.tracker_ckantockan.plugin import CkanToCkanTrackerPlugin
-from helpers import should_link_to_donl
+from ckanext.tracker_ckantockan_donl.helpers import should_link_to_donl
 from mapper.oneckan.mapper_oneckan import MapperOneCkan
 from worker.ckan_to_ckan.donl import CkanToCkanDONLWorkerWrapper
 from ckanext.tracker_ckantockan.helpers import is_private, is_draft, has_id

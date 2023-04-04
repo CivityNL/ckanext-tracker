@@ -2,27 +2,20 @@ import hashlib
 import json
 import logging
 import math
-
-import ckan.plugins.toolkit as toolkit
-from ckanext.tracker.backend import TrackerBackend
 from domain import Configuration
 from redis import Redis
 from rq import Queue, Worker
-
-log = logging.getLogger(__name__)
-
 from ckan import model
 from datetime import datetime
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker.backend import TrackerBackend
+from ckanext.tracker_base.backend import TrackerBackend
 from domain.task_status import DomainTaskStatus, ERROR, COMPLETE
 from sqlalchemy import and_
 
-import logging
+log = logging.getLogger(__name__)
 
 
 def get_tracker_activities(entity_type, entity_id, limit=100):
-    context = {'user': toolkit.g.user}
     trackers = []
     result = {}
     for tracker in TrackerBackend.get_trackers():

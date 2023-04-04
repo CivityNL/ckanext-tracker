@@ -1,7 +1,7 @@
 import re
 import urlparse
 
-from ckanext.tracker.classes.helpers import link_is_enabled
+from ckanext.tracker_base.helpers import link_is_enabled
 from worker.geonetwork.rest import GeoNetworkRestApi
 import logging
 

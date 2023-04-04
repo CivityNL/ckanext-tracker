@@ -1,6 +1,6 @@
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker.classes import PackageResourceTrackerPlugin
-from ckanext.tracker.classes.helpers import link_is_enabled
+from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_base.helpers import link_is_enabled
 from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
 from worker.geoserver.rest.model import Workspace, DataStore

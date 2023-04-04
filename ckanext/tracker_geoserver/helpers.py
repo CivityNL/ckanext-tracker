@@ -1,8 +1,7 @@
-import urllib
 import logging
 import json
 
-from ckanext.tracker.classes.helpers import link_is_enabled
+from ckanext.tracker_base.helpers import link_is_enabled
 from worker.geoserver.rest.model import FeatureType
 
 log = logging.getLogger(__name__)

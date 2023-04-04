@@ -3,9 +3,9 @@ import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckan.lib.plugins import DefaultTranslation
-import helpers
-from ckanext.tracker.backend import TrackerBackend
-import views as views
+import ckanext.tracker.helpers as helpers
+from ckanext.tracker_base.backend import TrackerBackend
+import ckanext.tracker.views as views
 
 log = logging.getLogger(__name__)
 
@@ -41,5 +41,4 @@ class TrackerPlugin(plugins.SingletonPlugin, DefaultTranslation):
     # IBlueprint
     def get_blueprint(self):
         u'''Return a Flask Blueprint object to be registered by the app.'''
-
         return views.tracker

@@ -1,5 +1,4 @@
 import logging
-
 from flask import Blueprint
 from flask.views import MethodView
 import ckan.plugins.toolkit as toolkit

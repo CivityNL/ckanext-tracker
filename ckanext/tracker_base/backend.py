@@ -1,6 +1,6 @@
 import logging
 
-from ckanext.tracker.model import TrackerBackendModel
+from ckanext.tracker_base.model import TrackerBackendModel
 
 log = logging.getLogger(__name__)
 
