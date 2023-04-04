@@ -1,7 +1,7 @@
 from ckan import model
-import ckanext.tracker_base.helpers as th
-from context import TrackerContext
-from base_tracker import BaseTrackerPlugin
+import ckanext.tracker_base.helpers as base_helpers
+from ckanext.tracker_base.context import TrackerContext
+from ckanext.tracker_base.base_tracker import BaseTrackerPlugin
 import logging
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -75,16 +75,16 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
         if after_package is not None:
             after_resources = {res.get("id"): res for res in after_package.pop("resources", [])}
 
-        changes_package = th.compare_dicts(
+        changes_package = base_helpers.compare_dicts(
             before_package, after_package, self.include_package_fields, self.exclude_package_fields
         )
 
-        created_resources = th.get_ids_inserted_resources(before_resources, after_resources)
-        deleted_resources = th.get_ids_deleted_resources(before_resources, after_resources)
-        active_resources = th.get_ids_same_resources(before_resources, after_resources)
+        created_resources = base_helpers.get_ids_inserted_resources(before_resources, after_resources)
+        deleted_resources = base_helpers.get_ids_deleted_resources(before_resources, after_resources)
+        active_resources = base_helpers.get_ids_same_resources(before_resources, after_resources)
         changes_resources = {}
         for res_id in active_resources:
-            res_changes = th.compare_dicts(
+            res_changes = base_helpers.compare_dicts(
                 before_resources.get(res_id), after_resources.get(res_id),
                 self.include_resource_fields, self.exclude_resource_fields
             )
@@ -103,7 +103,7 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
             if before_package.get("id") != after_package.get("id"):
                 log.warning("Got a different package")
                 return
-            elif th.has_been_deleted(after_package, changes_package):
+            elif base_helpers.has_been_deleted(after_package, changes_package):
                 # delete
                 if not self.ignore_packages:
                     self.package_delete(context, pkg_dict)
@@ -223,19 +223,13 @@ class PackageResourceTrackerPlugin(BaseTrackerPlugin):
     def do_package_show(self, package_id, context=None, method=None):
         try:
             pkg_dict = toolkit.get_action("package_show")(context, {"id": package_id})
-        except toolkit.NotFound:
+        except toolkit.ObjectNotFound:
             pkg_dict = None
-        log.debug("{} :: {} :: package_show returned something = [{}]".format(
-            self.name, method, bool(pkg_dict)
-        ))
         return pkg_dict
 
     def do_resource_show(self, resource_id, context=None, method=None):
         try:
             res_dict = toolkit.get_action("resource_show")(context, {"id": resource_id})
-        except toolkit.NotFound:
+        except toolkit.ObjectNotFound:
             res_dict = None
-        log.debug("{} :: {} :: resource_show returned something = [{}]".format(
-            self.name, method, bool(res_dict)
-        ))
         return res_dict

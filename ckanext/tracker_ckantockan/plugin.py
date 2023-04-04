@@ -1,6 +1,6 @@
 import logging
 
-from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_base.package_resource_tracker import PackageResourceTrackerPlugin
 from worker.ckan_to_ckan import CkanToCkanWorkerWrapper
 
 log = logging.getLogger(__name__)

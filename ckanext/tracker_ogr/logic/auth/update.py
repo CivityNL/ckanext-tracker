@@ -1,4 +1,4 @@
-from ckanext.tracker_base import auth_callback_hook
+from ckanext.tracker_base.auth import _callback_hook as auth_callback_hook
 
 
 def ogr_callback_hook(context, data_dict):

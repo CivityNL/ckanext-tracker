@@ -1,10 +1,10 @@
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_base.package_resource_tracker import PackageResourceTrackerPlugin
 from ckanext.tracker_base.helpers import link_is_enabled
 from worker.geoserver import GeoServerWorkerWrapper
 from worker.geoserver.rest import GeoServerRestApi
 from worker.geoserver.rest.model import Workspace, DataStore
-from helpers import get_geoserver_feature_type
+from ckanext.tracker_geoserver.helpers import get_geoserver_feature_type
 import ckan.plugins as plugins
 import logic.action.update as action_update
 import logic.auth.update as auth_update

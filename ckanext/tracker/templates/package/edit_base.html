@@ -2,5 +2,5 @@
 
 {% block content_primary_nav %}
   {{ super() }}
-  {{ h.build_nav_icon('package_trackers', _('Trackers'), id=pkg.name) }}
+  {{ h.build_nav_icon('tracker.package', _('Trackers'), id=pkg.name, icon='share') }}
 {% endblock %}

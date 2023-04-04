@@ -3,7 +3,7 @@ import ckan.plugins.toolkit as toolkit
 import ckanext.tracker_ogr.logic.action.update as action_update
 import ckanext.tracker_ogr.logic.auth.update as auth_update
 from ckan import model
-from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_base.package_resource_tracker import PackageResourceTrackerPlugin
 from worker.ogr import OgrWorkerWrapper
 import logging
 import ckanext.tracker_ogr.views as views
@@ -23,7 +23,7 @@ class OgrTrackerPlugin(PackageResourceTrackerPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IRoutes, inherit=True)
+    plugins.implements(plugins.IBlueprint)
 
     queue_name = 'ogr'
     worker = OgrWorkerWrapper()
@@ -53,7 +53,7 @@ class OgrTrackerPlugin(PackageResourceTrackerPlugin):
     # IBlueprint
     def get_blueprint(self):
         u'''Return a Flask Blueprint object to be registered by the app.'''
-        return views.tracker_ogr
+        return views.create_blueprint(self)
 
     #  Return the action for each Hook - Default to None ***********************************
     def action_to_take_on_resource_create(self, context, res_dict, pkg_dict):

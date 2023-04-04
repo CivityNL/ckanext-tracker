@@ -1,12 +1,12 @@
 import ckan.plugins.toolkit as toolkit
-from ckanext.tracker_base import PackageResourceTrackerPlugin
+from ckanext.tracker_base.package_resource_tracker import PackageResourceTrackerPlugin
 from ckanext.tracker_geonetwork.helpers import geonetwork_link_is_enabled
 from worker.geonetwork import GeoNetworkWorkerWrapper
 import ckan.plugins as plugins
 import logic.action.update as action_update
 import logic.auth.update as auth_update
 from ckanext.tracker_geoserver.interface import ITrackerGeoserver
-from ckanext.tracker_base.helpers import link_is_enabled
+from ckanext.tracker_base.helpers.generic import link_is_enabled
 import logging
 
 logging.basicConfig()
