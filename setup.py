@@ -56,6 +56,7 @@ setup(
     namespace_packages=['ckanext'],
 
     install_requires=[
+        "typing"
       # CKAN extensions should not list dependencies here, but in a separate
       # ``requirements.txt`` file.
       #
