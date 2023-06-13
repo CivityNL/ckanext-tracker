@@ -21,7 +21,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com//ckanext-tracker',
+    url='https://github.com/CivityNL/ckanext-tracker',
 
     # Author details
     author='''''',
@@ -84,10 +84,6 @@ setup(
 
         tracker=ckanext.tracker.plugin:TrackerPlugin
         tracker_ckantockan=ckanext.tracker_ckantockan.plugin:CkanToCkanTrackerPlugin
-        tracker_ckantockan_donl=ckanext.tracker_ckantockan_donl.plugin:CkanToCkanDonlTrackerPlugin
-        tracker_ckantockan_oneckan=ckanext.tracker_ckantockan_oneckan.plugin:CkanToCkanOneCkanTrackerPlugin
-        tracker_ckantockan_oneckan_rotterdam=ckanext.tracker_ckantockan_oneckan_rotterdam.plugin:CkanToCkanOneCkanRotterdamTrackerPlugin
-        tracker_ckantockan_oneckan_lidingo=ckanext.tracker_ckantockan_oneckan_lidingo.plugin:CkanToCkanOneCkanLidingoTrackerPlugin
         tracker_geonetwork=ckanext.tracker_geonetwork.plugin:GeonetworkTrackerPlugin
         tracker_geoserver=ckanext.tracker_geoserver.plugin:GeoserverTrackerPlugin
         tracker_ogr=ckanext.tracker_ogr.plugin:OgrTrackerPlugin
