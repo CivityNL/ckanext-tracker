@@ -1,16 +1,13 @@
 {% extends "package/edit_base.html" %}
 
 {% block primary_content_inner %}
-  {% set action = h.url_for('tracker.package', id=pkg.id) %}
 
     {% set statusses = h.get_tracker_statuses('package', pkg.id) %}
     {% for tracker in h.get_trackers() %}
         <h3 class="heading">{{ _('Details') }} {{ tracker.name }}</h3>
         {% if tracker.name in statusses %}
             <h4 class="heading">{{ _('Recent Jobs or Active Jobs') }}</h4>
-            {% snippet 'tracker/snippets/job_overview.html', statuses=statusses[tracker.name], action=action %}
-        {% else %}
-            {{ fsgdfgsdgf }}
+            {% snippet 'tracker/snippets/job_overview.html', statuses=statusses[tracker.name] %}
         {% endif %}
     {% endfor %}
 

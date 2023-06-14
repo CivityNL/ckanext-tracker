@@ -41,6 +41,8 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
         """
         if self.queue_name is None:
             self.queue_name = self.name
+        if self.badge_title is None:
+            self.badge_title = self.name
         self.redis_connection = base_helpers.set_connection()
         self.configuration = Configuration.from_dict(base_helpers.get_configuration_dict(self.name))
         TrackerBackend.register(self)
@@ -60,7 +62,7 @@ class BaseTrackerPlugin(plugins.SingletonPlugin):
 
     # UI related methods (see TrackerPlugin)
     def get_badge_title(self):
-        # TODO Sugestion: set self.badge_title to default to the class name...
+        # Loads badge_title from configuration, defaults to the
         return toolkit.config.get('ckanext.{}.badge_title'.format(self.name), self.badge_title)
 
     def get_show_ui(self):
