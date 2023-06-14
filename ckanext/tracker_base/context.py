@@ -4,7 +4,7 @@ from ckan.plugins import toolkit
 log = logging.getLogger(__name__)
 
 
-def get_show(object_type, object_id):
+def _get_show(object_type, object_id):
     return toolkit.get_action('{}_show'.format(object_type))({'ignore_auth': True}, {'id': object_id})
 
 
@@ -19,11 +19,11 @@ class TrackerContext(object):
 
     def before(self, package_id):
         if package_id is not None:
-            self._before_package = get_show('package', package_id)
+            self._before_package = _get_show('package', package_id)
 
     def after(self, package_id):
         if package_id is not None:
-            self._after_package = get_show('package', package_id)
+            self._after_package = _get_show('package', package_id)
 
     def before_package(self):
         return self._before_package

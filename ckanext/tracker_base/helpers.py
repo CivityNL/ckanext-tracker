@@ -10,6 +10,7 @@ from domain.task_status import DomainTaskStatus
 from typing import Dict, Optional, List
 from ckan.model import State
 
+
 def set_connection():
     """
     This function will get the Redis connection information from the configuration and initialize a
