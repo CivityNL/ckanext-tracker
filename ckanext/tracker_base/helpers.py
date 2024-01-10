@@ -103,7 +103,7 @@ def compare_dicts(old_dict, new_dict, include_fields=None, exclude_fields=None):
 
     result = {}
     if old_dict is not None and new_dict is not None:
-        set_keys = set(old_dict.keys() + new_dict.keys())
+        set_keys = set(old_dict.keys()).union(set(new_dict.keys()))
         if include_fields is not None:
             set_keys = set_keys & set(include_fields)
         if exclude_fields is not None:

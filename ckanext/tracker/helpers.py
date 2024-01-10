@@ -48,11 +48,11 @@ def get_tracker_activities_stream(entity_type, entity_id, limit=100):
     tracker_streams = {}
     rows = []
     ## create timestamps
-    for name, stream in activities.iteritems():
+    for name, stream in activities.items():
         for activity in stream:
             timestamps.extend(filter(None, [activity.created, activity.pending, activity.running, activity.complete]))
     timestamps = sorted(list(set(timestamps)))
-    for name, tracker_activities in activities.iteritems():
+    for name, tracker_activities in activities.items():
         streams = []
         max_timestamps = []
         for activity in tracker_activities:
@@ -101,16 +101,16 @@ def get_tracker_activities_stream(entity_type, entity_id, limit=100):
             diff = math.log10((timestamps[t+1] - timestamps[t]).total_seconds())
         _t = {
             "timestamp": timestamps[t],
-            "diff": int(diff) if diff > 0 else 0,
+            "diff": int(diff) if diff and diff > 0 else 0,
             "activities": []
         }
-        for name, streams in tracker_streams.iteritems():
+        for name, streams in tracker_streams.items():
             for stream in streams:
                 _t["activities"].append(stream[t])
         rows.append(_t)
 
     headers = []
-    for name, streams in tracker_streams.iteritems():
+    for name, streams in tracker_streams.items():
         headers.append({
             "name": name,
             "size": len(streams)
